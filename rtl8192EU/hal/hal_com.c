@@ -602,7 +602,6 @@ void rtw_init_hal_com_default_value(PADAPTER Adapter)
 {
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
 
-	Adapter->registrypriv.RegPowerBase = 14;
 	pHalData->AntDetection = 1;
 }
 
@@ -928,6 +927,14 @@ void hw_var_port_switch(_adapter *adapter)
 		rtw_write8(adapter, REG_BSSID1+i, bssid[i]);
 
 	/* write bcn ctl */
+#ifdef CONFIG_BT_COEXIST
+#if defined(CONFIG_RTL8723A) || defined(CONFIG_RTL8723B)
+	// always enable port0 beacon function for PSTDMA
+	bcn_ctrl_1 |= EN_BCN_FUNCTION;
+	// always disable port1 beacon function for PSTDMA
+	bcn_ctrl &= ~EN_BCN_FUNCTION;
+#endif
+#endif
 	rtw_write8(adapter, REG_BCN_CTRL, bcn_ctrl_1);
 	rtw_write8(adapter, REG_BCN_CTRL_1, bcn_ctrl);
 
@@ -1001,68 +1008,177 @@ void hw_var_port_switch(_adapter *adapter)
 #endif /* CONFIG_CONCURRENT_MODE */
 }
 
-void SetHwReg(PADAPTER padapter, u8 variable, u8 *val)
+void SetHwReg(_adapter *adapter, u8 variable, u8 *val)
 {
-	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(padapter);
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	DM_ODM_T *odm = &(hal_data->odmpriv);
 
 _func_enter_;
 
 	switch (variable) {
 	case HW_VAR_PORT_SWITCH:
-		hw_var_port_switch(padapter);
+		hw_var_port_switch(adapter);
+		break;
+	case HW_VAR_DM_FLAG:
+		odm->SupportAbility = *((u32*)val);
+		break;
+	case HW_VAR_DM_FUNC_OP:
+		if (*((u8*)val) == _TRUE) {
+			/* save dm flag */
+			odm->BK_SupportAbility = odm->SupportAbility;				
+		} else {
+			/* restore dm flag */
+			odm->SupportAbility = odm->BK_SupportAbility;
+		}
+		break;
+	case HW_VAR_DM_FUNC_SET:
+		if(*((u32*)val) == DYNAMIC_ALL_FUNC_ENABLE){
+			struct dm_priv	*dm = &hal_data->dmpriv;
+			dm->DMFlag = dm->InitDMFlag;
+			odm->SupportAbility = dm->InitODMFlag;
+		} else {
+			odm->SupportAbility |= *((u32 *)val);
+		}
+		break;
+	case HW_VAR_DM_FUNC_CLR:
+		/*
+		* input is already a mask to clear function
+		* don't invert it again! George,Lucas@20130513
+		*/
+		odm->SupportAbility &= *((u32 *)val);
 		break;
 	default:
-		//DBG_871X_LEVEL(_drv_always_, FUNC_ADPT_FMT" variable(%d) not defined!\n",
-		//	FUNC_ADPT_ARG(padapter), variable);
+		if (0)
+		DBG_871X_LEVEL(_drv_always_, FUNC_ADPT_FMT" variable(%d) not defined!\n",
+			FUNC_ADPT_ARG(adapter), variable);
 		break;
 	}
 
 _func_exit_;
 }
 
-void GetHwReg(PADAPTER padapter, u8 variable, u8 *val)
+void GetHwReg(_adapter *adapter, u8 variable, u8 *val)
 {
-	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(padapter);
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	DM_ODM_T *odm = &(hal_data->odmpriv);
 
 _func_enter_;
 
 	switch (variable) {
+	case HW_VAR_BASIC_RATE:
+		*((u16*)val) = hal_data->BasicRateSet;
+		break;
+	case HW_VAR_DM_FLAG:
+		*((u32*)val) = odm->SupportAbility;
+		break;
+	case HW_VAR_RF_TYPE:
+		*((u8*)val) = hal_data->rf_type;
+		break;
 	default:
-		//DBG_871X_LEVEL(_drv_always_, FUNC_ADPT_FMT" variable(%d) not defined!\n",
-		//	FUNC_ADPT_ARG(padapter), variable);
+		if (0)
+		DBG_871X_LEVEL(_drv_always_, FUNC_ADPT_FMT" variable(%d) not defined!\n",
+			FUNC_ADPT_ARG(adapter), variable);
 		break;
 	}
 
 _func_exit_;
 }
 
+
+
+
 u8
 SetHalDefVar(_adapter *adapter, HAL_DEF_VARIABLE variable, void *value)
-{
-	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(adapter);
-	PDM_ODM_T pDM_Odm = &(pHalData->odmpriv);
+{	
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	DM_ODM_T *odm = &(hal_data->odmpriv);
 	u8 bResult = _SUCCESS;
 
 	switch(variable) {
-		case HW_DEF_FA_CNT_DUMP:
-			if(*((u8*)value))
-				pDM_Odm->DebugComponents |= (ODM_COMP_DIG |ODM_COMP_FA_CNT);
-			else
-				pDM_Odm->DebugComponents &= ~(ODM_COMP_DIG |ODM_COMP_FA_CNT);
-			break;
-		case HW_DEF_ODM_DBG_FLAG:
-			ODM_CmnInfoUpdate(pDM_Odm, ODM_CMNINFO_DBG_COMP, *((u8Byte*)value));
-			break;
-		case HW_DEF_ODM_DBG_LEVEL:
-			ODM_CmnInfoUpdate(pDM_Odm, ODM_CMNINFO_DBG_LEVEL, *((u4Byte*)value));
-			break;
-		case HAL_DEF_ANT_DETECT:
-			pHalData->AntDetection = *((u8 *)value);
-			break;
-		default:
-			DBG_871X_LEVEL(_drv_always_, "%s: [WARNING] HAL_DEF_VARIABLE(%d) not defined!\n", __FUNCTION__, variable);
-			bResult = _FAIL;
-			break;
+	case HW_DEF_FA_CNT_DUMP:		
+		//ODM_COMP_COMMON
+		if(*((u8*)value))
+			odm->DebugComponents |= (ODM_COMP_DIG |ODM_COMP_FA_CNT);
+		else
+			odm->DebugComponents &= ~(ODM_COMP_DIG |ODM_COMP_FA_CNT);		
+		break;
+	case HAL_DEF_DBG_RX_INFO_DUMP:
+		{
+			PFALSE_ALARM_STATISTICS FalseAlmCnt = &(odm->FalseAlmCnt);
+			pDIG_T	pDM_DigTable = &odm->DM_DigTable;
+
+			DBG_871X("============ Rx Info dump ===================\n");
+			DBG_871X("bLinked = %d, RSSI_Min = %d(%%), CurrentIGI = 0x%x \n",
+				odm->bLinked, odm->RSSI_Min, pDM_DigTable->CurIGValue);
+			DBG_871X("Cnt_Cck_fail = %d, Cnt_Ofdm_fail = %d, Total False Alarm = %d\n",	
+				FalseAlmCnt->Cnt_Cck_fail, FalseAlmCnt->Cnt_Ofdm_fail, FalseAlmCnt->Cnt_all);
+
+			if(odm->bLinked){
+				DBG_871X("RxRate = %s, RSSI_A = %d(%%), RSSI_B = %d(%%)\n", 
+					HDATA_RATE(odm->RxRate), odm->RSSI_A, odm->RSSI_B);	
+
+				#ifdef DBG_RX_SIGNAL_DISPLAY_RAW_DATA
+				rtw_dump_raw_rssi_info(adapter);
+				#endif
+			}
+		}		
+		break;		
+	case HW_DEF_ODM_DBG_FLAG:
+		ODM_CmnInfoUpdate(odm, ODM_CMNINFO_DBG_COMP, *((u8Byte*)value));
+		break;
+	case HW_DEF_ODM_DBG_LEVEL:
+		ODM_CmnInfoUpdate(odm, ODM_CMNINFO_DBG_LEVEL, *((u4Byte*)value));
+		break;
+	case HAL_DEF_DBG_DM_FUNC:
+	{
+		u8 dm_func = *((u8*)value);
+		struct dm_priv *dm = &hal_data->dmpriv;
+
+		if(dm_func == 0){ //disable all dynamic func
+			odm->SupportAbility = DYNAMIC_FUNC_DISABLE;
+			DBG_8192C("==> Disable all dynamic function...\n");
+		}
+		else if(dm_func == 1){//disable DIG
+			odm->SupportAbility  &= (~DYNAMIC_BB_DIG);
+			DBG_8192C("==> Disable DIG...\n");
+		}
+		else if(dm_func == 2){//disable High power
+			odm->SupportAbility  &= (~DYNAMIC_BB_DYNAMIC_TXPWR);
+		}
+		else if(dm_func == 3){//disable tx power tracking
+			odm->SupportAbility  &= (~DYNAMIC_RF_CALIBRATION);
+			DBG_8192C("==> Disable tx power tracking...\n");
+		}
+		else if(dm_func == 4){//disable BT coexistence
+			dm->DMFlag &= (~DYNAMIC_FUNC_BT);
+		}
+		else if(dm_func == 5){//disable antenna diversity
+			odm->SupportAbility  &= (~DYNAMIC_BB_ANT_DIV);
+		}
+		else if(dm_func == 6){//turn on all dynamic func
+			if(!(odm->SupportAbility  & DYNAMIC_BB_DIG)) {
+				DIG_T	*pDigTable = &odm->DM_DigTable;
+				pDigTable->CurIGValue= rtw_read8(adapter, 0xc50);
+			}
+			dm->DMFlag |= DYNAMIC_FUNC_BT;
+			odm->SupportAbility = DYNAMIC_ALL_FUNC_ENABLE;
+			DBG_8192C("==> Turn on all dynamic function...\n");
+		}
+	}
+		break;
+	case HAL_DEF_DBG_DUMP_RXPKT:
+		hal_data->bDumpRxPkt = *((u8*)value);
+		break;
+	case HAL_DEF_DBG_DUMP_TXPKT:
+		hal_data->bDumpTxPkt = *((u8*)value);
+		break;
+	case HAL_DEF_ANT_DETECT:
+		hal_data->AntDetection = *((u8 *)value);
+		break;
+	default:
+		DBG_871X_LEVEL(_drv_always_, "%s: [WARNING] HAL_DEF_VARIABLE(%d) not defined!\n", __FUNCTION__, variable);
+		bResult = _FAIL;
+		break;
 	}
 
 	return bResult;
@@ -1071,27 +1187,54 @@ SetHalDefVar(_adapter *adapter, HAL_DEF_VARIABLE variable, void *value)
 u8
 GetHalDefVar(_adapter *adapter, HAL_DEF_VARIABLE variable, void *value)
 {
-	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(adapter);
-	PDM_ODM_T pDM_Odm = &(pHalData->odmpriv);
+	HAL_DATA_TYPE *hal_data = GET_HAL_DATA(adapter);
+	DM_ODM_T *odm = &(hal_data->odmpriv);
 	u8 bResult = _SUCCESS;
 
 	switch(variable) {
-	case HW_DEF_ODM_DBG_FLAG:
-		*((u8Byte*)value) = pDM_Odm->DebugComponents;
-		break;
-	case HW_DEF_ODM_DBG_LEVEL:
-		*((u4Byte*)value) = pDM_Odm->DebugLevel;
-		break;
-	case HAL_DEF_DBG_DM_FUNC:
-		*(( u32*)value) =pHalData->odmpriv.SupportAbility;
-		break;
-	case HAL_DEF_ANT_DETECT:
-		*((u8 *)value) = pHalData->AntDetection;
-		break;
-	default:
-		DBG_871X_LEVEL(_drv_always_, "%s: [WARNING] HAL_DEF_VARIABLE(%d) not defined!\n", __FUNCTION__, variable);
-		bResult = _FAIL;
-		break;
+		case HAL_DEF_UNDERCORATEDSMOOTHEDPWDB:
+			{
+				struct mlme_priv *pmlmepriv;
+				struct sta_priv *pstapriv;
+				struct sta_info *psta;
+
+				pmlmepriv = &adapter->mlmepriv;
+				pstapriv = &adapter->stapriv;
+				psta = rtw_get_stainfo(pstapriv, pmlmepriv->cur_network.network.MacAddress);
+				if (psta)
+				{
+					*((int*)value) = psta->rssi_stat.UndecoratedSmoothedPWDB;     
+				}
+			}
+			break;
+		case HW_DEF_ODM_DBG_FLAG:
+			*((u8Byte*)value) = odm->DebugComponents;
+			break;
+		case HW_DEF_ODM_DBG_LEVEL:
+			*((u4Byte*)value) = odm->DebugLevel;
+			break;
+		case HAL_DEF_DBG_DM_FUNC:
+			*(( u32*)value) =hal_data->odmpriv.SupportAbility;
+			break;
+		case HAL_DEF_DBG_DUMP_RXPKT:
+			*((u8*)value) = hal_data->bDumpRxPkt;
+			break;
+		case HAL_DEF_DBG_DUMP_TXPKT:
+			*((u8*)value) = hal_data->bDumpTxPkt;
+			break;
+		case HAL_DEF_ANT_DETECT:
+			*((u8 *)value) = hal_data->AntDetection;
+			break;
+		case HAL_DEF_MACID_SLEEP:
+			*(u8*)value = _FALSE;
+			break;
+		case HAL_DEF_TX_PAGE_SIZE:
+			*(( u32*)value) = PAGE_SIZE_128;
+			break;
+		default:
+			DBG_871X_LEVEL(_drv_always_, "%s: [WARNING] HAL_DEF_VARIABLE(%d) not defined!\n", __FUNCTION__, variable);
+			bResult = _FAIL;
+			break;
 	}
 
 	return bResult;
@@ -1358,3 +1501,148 @@ isAllSpaceOrTab(
 	return size == NumOfSpaceAndTab;
 }
 
+
+void rtw_hal_check_rxfifo_full(_adapter *adapter)
+{
+	struct dvobj_priv *psdpriv = adapter->dvobj;
+	struct debug_priv *pdbgpriv = &psdpriv->drv_dbg;
+	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(adapter);
+	int save_cnt=_FALSE;
+	
+	//switch counter to RX fifo
+	if(IS_81XXC(pHalData->VersionID) || IS_92D(pHalData->VersionID) 
+		|| IS_8188E(pHalData->VersionID) || IS_8723_SERIES(pHalData->VersionID)
+		|| IS_8812_SERIES(pHalData->VersionID) || IS_8821_SERIES(pHalData->VersionID))
+	{
+		rtw_write8(adapter, REG_RXERR_RPT+3, rtw_read8(adapter, REG_RXERR_RPT+3)|0xa0);
+		save_cnt = _TRUE;
+	}
+	else if(IS_8723B_SERIES(pHalData->VersionID) || IS_8192E(pHalData->VersionID))
+	{
+		//printk("8723b or 8192e , MAC_667 set 0xf0\n");
+		rtw_write8(adapter, REG_RXERR_RPT+3, rtw_read8(adapter, REG_RXERR_RPT+3)|0xf0);
+		save_cnt = _TRUE;
+	}
+	//todo: other chips 
+		
+	if(save_cnt)
+	{
+		//rtw_write8(adapter, REG_RXERR_RPT+3, rtw_read8(adapter, REG_RXERR_RPT+3)|0xa0);
+		pdbgpriv->dbg_rx_fifo_last_overflow = pdbgpriv->dbg_rx_fifo_curr_overflow;
+		pdbgpriv->dbg_rx_fifo_curr_overflow = rtw_read16(adapter, REG_RXERR_RPT);
+		pdbgpriv->dbg_rx_fifo_diff_overflow = pdbgpriv->dbg_rx_fifo_curr_overflow-pdbgpriv->dbg_rx_fifo_last_overflow;
+	}
+}
+
+void linked_info_dump(_adapter *padapter,u8 benable)
+{			
+	struct pwrctrl_priv *pwrctrlpriv = adapter_to_pwrctl(padapter);
+
+	if(padapter->bLinkInfoDump == benable)
+		return;
+	
+	DBG_871X("%s %s \n",__FUNCTION__,(benable)?"enable":"disable");
+										
+	if(benable){
+		#ifdef CONFIG_LPS
+		pwrctrlpriv->org_power_mgnt = pwrctrlpriv->power_mgnt;//keep org value
+		rtw_pm_set_lps(padapter,PS_MODE_ACTIVE);
+		#endif	
+								
+		#ifdef CONFIG_IPS	
+		pwrctrlpriv->ips_org_mode = pwrctrlpriv->ips_mode;//keep org value
+		rtw_pm_set_ips(padapter,IPS_NONE);
+		#endif	
+	}
+	else{
+		#ifdef CONFIG_IPS		
+		rtw_pm_set_ips(padapter, pwrctrlpriv->ips_org_mode);
+		#endif // CONFIG_IPS
+
+		#ifdef CONFIG_LPS	
+		rtw_pm_set_lps(padapter, pwrctrlpriv->ips_org_mode);
+		#endif // CONFIG_LPS
+	}
+	padapter->bLinkInfoDump = benable ;	
+}
+
+#ifdef DBG_RX_SIGNAL_DISPLAY_RAW_DATA
+void rtw_get_raw_rssi_info(void *sel, _adapter *padapter)
+{
+	u8 isCCKrate,rf_path;
+	PHAL_DATA_TYPE	pHalData =  GET_HAL_DATA(padapter);
+	struct rx_raw_rssi *psample_pkt_rssi = &padapter->recvpriv.raw_rssi_info;
+	
+	DBG_871X_SEL_NL(sel,"RxRate = %s, PWDBALL = %d(%%), rx_pwr_all = %d(dBm)\n", 
+			HDATA_RATE(psample_pkt_rssi->data_rate), psample_pkt_rssi->pwdball, psample_pkt_rssi->pwr_all);
+	isCCKrate = (psample_pkt_rssi->data_rate <= DESC_RATE11M)?TRUE :FALSE;
+
+	if(isCCKrate)
+		psample_pkt_rssi->mimo_singal_strength[0] = psample_pkt_rssi->pwdball;
+		
+	for(rf_path = 0;rf_path<pHalData->NumTotalRFPath;rf_path++)
+	{
+		DBG_871X_SEL_NL(sel,"RF_PATH_%d=>singal_strength:%d(%%),singal_quality:%d(%%)\n" 
+			,rf_path,psample_pkt_rssi->mimo_singal_strength[rf_path],psample_pkt_rssi->mimo_singal_quality[rf_path]);
+		
+		if(!isCCKrate){
+			DBG_871X_SEL_NL(sel,"\trx_ofdm_pwr:%d(dBm),rx_ofdm_snr:%d(dB)\n",
+			psample_pkt_rssi->ofdm_pwr[rf_path],psample_pkt_rssi->ofdm_snr[rf_path]);
+		}
+	}	
+}
+
+void rtw_dump_raw_rssi_info(_adapter *padapter)
+{
+	u8 isCCKrate,rf_path;
+	PHAL_DATA_TYPE	pHalData =  GET_HAL_DATA(padapter);
+	struct rx_raw_rssi *psample_pkt_rssi = &padapter->recvpriv.raw_rssi_info;
+	DBG_871X("============ RAW Rx Info dump ===================\n");
+	DBG_871X("RxRate = %s, PWDBALL = %d(%%), rx_pwr_all = %d(dBm)\n", 
+			HDATA_RATE(psample_pkt_rssi->data_rate), psample_pkt_rssi->pwdball, psample_pkt_rssi->pwr_all);	
+
+	isCCKrate = (psample_pkt_rssi->data_rate <= DESC_RATE11M)?TRUE :FALSE;
+
+	if(isCCKrate)
+		psample_pkt_rssi->mimo_singal_strength[0] = psample_pkt_rssi->pwdball;
+		
+	for(rf_path = 0;rf_path<pHalData->NumTotalRFPath;rf_path++)
+	{
+		DBG_871X("RF_PATH_%d=>singal_strength:%d(%%),singal_quality:%d(%%)" 
+			,rf_path,psample_pkt_rssi->mimo_singal_strength[rf_path],psample_pkt_rssi->mimo_singal_quality[rf_path]);
+		
+		if(!isCCKrate){
+			printk(",rx_ofdm_pwr:%d(dBm),rx_ofdm_snr:%d(dB)\n",
+			psample_pkt_rssi->ofdm_pwr[rf_path],psample_pkt_rssi->ofdm_snr[rf_path]);
+		}else{
+			printk("\n");	
+		}
+	}	
+}
+
+void rtw_store_phy_info(_adapter *padapter, union recv_frame *prframe)	
+{
+	u8 isCCKrate,rf_path;
+	PHAL_DATA_TYPE	pHalData =  GET_HAL_DATA(padapter);
+	struct rx_pkt_attrib *pattrib = &prframe->u.hdr.attrib;
+
+	PODM_PHY_INFO_T pPhyInfo  = (PODM_PHY_INFO_T)(&pattrib->phy_info);
+	struct rx_raw_rssi *psample_pkt_rssi = &padapter->recvpriv.raw_rssi_info;
+	
+	psample_pkt_rssi->data_rate = pattrib->data_rate;
+	isCCKrate = (pattrib->data_rate <= DESC_RATE11M)?TRUE :FALSE;
+	
+	psample_pkt_rssi->pwdball = pPhyInfo->RxPWDBAll;
+	psample_pkt_rssi->pwr_all = pPhyInfo->RecvSignalPower;
+
+	for(rf_path = 0;rf_path<pHalData->NumTotalRFPath;rf_path++)
+	{		
+		psample_pkt_rssi->mimo_singal_strength[rf_path] = pPhyInfo->RxMIMOSignalStrength[rf_path];
+		psample_pkt_rssi->mimo_singal_quality[rf_path] = pPhyInfo->RxMIMOSignalQuality[rf_path];
+		if(!isCCKrate){
+			psample_pkt_rssi->ofdm_pwr[rf_path] = pPhyInfo->RxPwr[rf_path];
+			psample_pkt_rssi->ofdm_snr[rf_path] = pPhyInfo->RxSNR[rf_path];		
+		}
+	}
+}
+#endif

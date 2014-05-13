@@ -71,7 +71,7 @@
 #define TXSCALE_TABLE_SIZE 		37
 #define TXPWR_TRACK_TABLE_SIZE 	30
 #define DELTA_SWINGIDX_SIZE     30
-#define BAND_NUM 				3
+#define BAND_NUM 				4
 
 //============================================================
 //3 PSD Handler
@@ -497,7 +497,7 @@ typedef struct _ODM_Phy_Status_Info_
 	u1Byte		BTRxRSSIPercentage;	
 	u1Byte		SignalStrength; 		// in 0-100 index.
  
-	u1Byte		RxPwr[4];				//per-path's pwdb
+	s1Byte		RxPwr[4];				//per-path's pwdb
 #endif
 	u1Byte		RxSNR[4];				//per-path's SNR	
 	u1Byte		BandWidth;
@@ -1403,6 +1403,7 @@ typedef  struct DM_Out_Source_Dynamic_Mechanism_Structure
 	u1Byte			*pBandWidth;
  	// Central channel location Ch1/Ch2/....
 	u1Byte			*pChannel;	//central channel number
+	BOOLEAN			DPK_Done;
 	// Common info for 92D DMSP
 	
 	BOOLEAN			*pbGetValueFromOtherMac;
@@ -1696,6 +1697,7 @@ typedef enum _ODM_FW_Config_Type{
     CONFIG_FW_MP,
     CONFIG_FW_WoWLAN,
     CONFIG_FW_WoWLAN_2,
+    CONFIG_FW_AP_WoWLAN,
     CONFIG_FW_BT,
 } ODM_FW_Config_Type;
 

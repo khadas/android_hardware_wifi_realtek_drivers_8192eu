@@ -28,7 +28,7 @@
 #include <rtl8723b_hal.h>
 #endif
 
-#if (defined(CONFIG_RTL8723A) || defined(CONFIG_RTL8723B))
+#if defined(CONFIG_RTL8723A) || defined(CONFIG_RTL8723B) || defined(CONFIG_RTL8821A)
 void MPh2c_timeout_handle(void *FunctionContext)
 {
 	PADAPTER pAdapter;
@@ -529,7 +529,7 @@ MPTBT_FwC2hBtMpCtrl(
 	
 	if(Adapter->bBTFWReady == _FALSE || Adapter->registrypriv.mp_mode == 0 )
 	{	
-		DBG_8192C("[MPT], %s, bBTFWReady == _FALSE \n", __FUNCTION__);
+		//DBG_8192C("Ignore C2H BT MP Info since not in MP mode \n");
 		return;
 	}
 	if( length > 32 || length < 3 )

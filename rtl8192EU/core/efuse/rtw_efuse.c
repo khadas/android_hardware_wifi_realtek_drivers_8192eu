@@ -430,7 +430,7 @@ efuse_OneByteRead(
 	IN	u8			*data,
 	IN	BOOLEAN		bPseudoTest)
 {
-	u8	tmpidx = 0;
+	u32	tmpidx = 0;
 	u8	bResult;
 	u8	readbyte;
 
@@ -762,68 +762,69 @@ u8 rtw_BT_efuse_map_read(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 //------------------------------------------------------------------------------
 u8 rtw_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 {
+#define RT_ASSERT_RET(expr)												\
+	if(!(expr)) {															\
+		printk( "Assertion failed! %s at ......\n", #expr);							\
+		printk( "      ......%s,%s,line=%d\n",__FILE__,__FUNCTION__,__LINE__);	\
+		return _FAIL;	\
+	}
+
 	u8	offset, word_en;
 	u8	*map;
 	u8	newdata[PGPKT_DATA_SIZE];
 	s32	i, j, idx;
 	u8	ret = _SUCCESS;
 	u16	mapLen=0;
+	EEPROM_EFUSE_PRIV *pEEPROM = GET_EEPROM_EFUSE_PRIV(padapter);
+	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
 
 	EFUSE_GetEfuseDefinition(padapter, EFUSE_WIFI, TYPE_EFUSE_MAP_LEN, (PVOID)&mapLen, _FALSE);
 
 	if ((addr + cnts) > mapLen)
 		return _FAIL;
 
+	RT_ASSERT_RET(PGPKT_DATA_SIZE == 8); // have to be 8 byte alignment
+	RT_ASSERT_RET((mapLen & 0x7) == 0); // have to be PGPKT_DATA_SIZE alignment for memcpy
+
 	map = rtw_zmalloc(mapLen);
 	if(map == NULL){
 		return _FAIL;
 	}
-
+	
+	_rtw_memset(map, 0xFF, mapLen);
+	
 	ret = rtw_efuse_map_read(padapter, 0, mapLen, map);
 	if (ret == _FAIL) goto exit;
 
 	Efuse_PowerSwitch(padapter, _TRUE, _TRUE);
 
+	idx = 0;
 	offset = (addr >> 3);
-	word_en = 0xF;
-	_rtw_memset(newdata, 0xFF, PGPKT_DATA_SIZE);
-	i = addr & 0x7;	// index of one package
-	j = 0;		// index of new package
-	idx = 0;	// data index
-
-	if (i & 0x1) {
-		// odd start
-		if (data[idx] != map[addr+idx]) {
-			word_en &= ~BIT(i >> 1);
-			newdata[i-1] = map[addr+idx-1];
-			newdata[i] = data[idx];
-		}
-		i++;
-		idx++;
-	}
-	do {
-		for (; i < PGPKT_DATA_SIZE; i += 2)
+	while (idx < cnts)
+	{
+		word_en = 0xF;
+		j = (addr + idx) & 0x7;
+		_rtw_memcpy(newdata, &map[offset << 3], PGPKT_DATA_SIZE);
+		for (i = j; i<PGPKT_DATA_SIZE && idx < cnts; i++, idx++)
 		{
-			if (cnts == idx) break;
-			if ((cnts - idx) == 1) {
-				if (data[idx] != map[addr+idx]) {
-					word_en &= ~BIT(i >> 1);
-					newdata[i] = data[idx];
-					newdata[i+1] = map[addr+idx+1];
-				}
-				idx++;
-				break;
-			} else {
-				if ((data[idx] != map[addr+idx]) ||
-				    (data[idx+1] != map[addr+idx+1]))
-				{
-					word_en &= ~BIT(i >> 1);
-					newdata[i] = data[idx];
-					newdata[i+1] = data[idx + 1];
-				}
-				idx += 2;
+			if (data[idx] != map[addr + idx])
+			{
+				word_en &= ~BIT(i >> 1);
+				newdata[i] = data[idx];
+#ifdef CONFIG_RTL8723B					
+				 if( addr + idx == 0x8)
+				 {	
+					if (IS_C_CUT(pHalData->VersionID) || IS_B_CUT(pHalData->VersionID))
+					{
+						if(pEEPROM->adjuseVoltageVal == 6)
+						{
+								newdata[i] = map[addr + idx];
+							 	DBG_8192C(" %s ,\n adjuseVoltageVal = %d ,newdata[%d] = %x \n",__func__,pEEPROM->adjuseVoltageVal,i,newdata[i]);	 
+						}
+					}
+				  }
+#endif
 			}
-			if (idx == cnts) break;
 		}
 
 		if (word_en != 0xF) {
@@ -838,14 +839,8 @@ u8 rtw_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 			if (ret == _FAIL) break;
 		}
 
-		if (idx == cnts) break;
-
 		offset++;
-		i = 0;
-		j = 0;
-		word_en = 0xF;
-		_rtw_memset(newdata, 0xFF, PGPKT_DATA_SIZE);
-	} while (1);
+	}
 
 	Efuse_PowerSwitch(padapter, _TRUE, _FALSE);
 
@@ -860,6 +855,13 @@ exit:
 //------------------------------------------------------------------------------
 u8 rtw_BT_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 {
+#define RT_ASSERT_RET(expr)												\
+	if(!(expr)) {															\
+		printk( "Assertion failed! %s at ......\n", #expr);							\
+		printk( "      ......%s,%s,line=%d\n",__FILE__,__FUNCTION__,__LINE__);	\
+		return _FAIL;	\
+	}
+
 	u8	offset, word_en;
 	u8	*map;
 	u8	newdata[PGPKT_DATA_SIZE];
@@ -871,6 +873,9 @@ u8 rtw_BT_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 
 	if ((addr + cnts) > mapLen)
 		return _FAIL;
+
+	RT_ASSERT_RET(PGPKT_DATA_SIZE == 8); // have to be 8 byte alignment
+	RT_ASSERT_RET((mapLen & 0x7) == 0); // have to be PGPKT_DATA_SIZE alignment for memcpy
 
 	map = rtw_zmalloc(mapLen);
 	if(map == NULL){
@@ -895,71 +900,37 @@ u8 rtw_BT_efuse_map_write(PADAPTER padapter, u16 addr, u16 cnts, u8 *data)
 	DBG_871X("\n");
 	Efuse_PowerSwitch(padapter, _TRUE, _TRUE);
 
+	idx = 0;
 	offset = (addr >> 3);
-	word_en = 0xF;
-	_rtw_memset(newdata, 0xFF, PGPKT_DATA_SIZE);
-	i = addr & 0x7;	// index of one package
-	j = 0;		// index of new package
-	idx = 0;	// data index
-
-	if (i & 0x1) {
-		// odd start
-		if (data[idx] != map[addr+idx]) {
-			word_en &= ~BIT(i >> 1);
-			newdata[i-1] = map[addr+idx-1];
-			newdata[i] = data[idx];
-		}
-		i++;
-		idx++;
-	}
-	do {
-		for (; i < PGPKT_DATA_SIZE; i += 2)
+	while (idx < cnts)
+	{
+		word_en = 0xF;
+		j = (addr + idx) & 0x7;
+		_rtw_memcpy(newdata, &map[offset << 3], PGPKT_DATA_SIZE);
+		for (i = j; i<PGPKT_DATA_SIZE && idx < cnts; i++, idx++)
 		{
-			if (cnts == idx) break;
-			if ((cnts - idx) == 1) {
-				if (data[idx] != map[addr+idx]) {
-					word_en &= ~BIT(i >> 1);
-					newdata[i] = data[idx];
-					newdata[i+1] = map[addr+idx+1];
-				}
-				idx++;
-				break;
-			} else {
-				if ((data[idx] != map[addr+idx]) ||
-				    (data[idx+1] != map[addr+idx+1]))
-				{
-					word_en &= ~BIT(i >> 1);
-					newdata[i] = data[idx];
-					newdata[i+1] = data[idx + 1];
-				}
-				idx += 2;
+			if (data[idx] != map[addr + idx])
+			{
+				word_en &= ~BIT(i >> 1);
+				newdata[i] = data[idx];
 			}
-			if (idx == cnts) break;
 		}
 
-		if (word_en != 0xF)
-		{
-			DBG_871X("%s: offset=%#X\n", __FUNCTION__, offset);
-			DBG_871X("%s: word_en=%#X\n", __FUNCTION__, word_en);
+		if (word_en != 0xF) {
+			DBG_871X("offset=%x \n",offset);
+			DBG_871X("word_en=%x \n",word_en);
 			DBG_871X("%s: data=", __FUNCTION__);
-			for (i=0; i<PGPKT_DATA_SIZE; i++)
+			for(i=0;i<PGPKT_DATA_SIZE;i++)
 			{
 				DBG_871X("0x%02X ", newdata[i]);
 			}
 			DBG_871X("\n");
-
 			ret = Efuse_PgPacketWrite_BT(padapter, offset, word_en, newdata, _FALSE);
 			if (ret == _FAIL) break;
 		}
 
-		if (idx == cnts) break;
-
 		offset++;
-		i = 0;
-		j = 0;
-		word_en = 0xF;
-		_rtw_memset(newdata, 0xFF, PGPKT_DATA_SIZE);
-	} while (1);
+	}
 
 	Efuse_PowerSwitch(padapter, _TRUE, _FALSE);
 
@@ -1352,4 +1323,114 @@ int retriveAdaptorInfoFile(char *path, struct eeprom_priv * eeprom_priv)
 #endif //CONFIG_ADAPTOR_INFO_CACHING_FILE
 #endif //PLATFORM_LINUX
 
+#ifdef CONFIG_EFUSE_CONFIG_FILE
 
+void Rtw_Hal_ReadMACAddrFromFile(PADAPTER padapter)
+{
+	u32 i;
+	struct file *fp;
+	mm_segment_t fs;
+	u8 source_addr[18];
+	loff_t pos = 0;
+	u32 curtime = rtw_get_current_time();
+	EEPROM_EFUSE_PRIV *pEEPROM = GET_EEPROM_EFUSE_PRIV(padapter);
+	u8 *head, *end;
+
+	u8 null_mac_addr[ETH_ALEN] = {0, 0, 0,0, 0, 0};
+	u8 multi_mac_addr[ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+	
+	_rtw_memset(source_addr, 0, 18);
+	_rtw_memset(pEEPROM->mac_addr, 0, ETH_ALEN);
+
+	fp = filp_open("/data/wifimac.txt", O_RDWR,  0644);
+	if (IS_ERR(fp)) {
+		pEEPROM->bloadmac_fail_flag = _TRUE;
+		DBG_871X("Error, wifi mac address file doesn't exist.\n");
+	} else {
+		fs = get_fs();
+		set_fs(KERNEL_DS);
+
+		DBG_871X("wifi mac address:\n");
+		vfs_read(fp, source_addr, 18, &pos);
+		source_addr[17] = ':';
+
+		head = end = source_addr;
+		for (i=0; i<ETH_ALEN; i++) {
+			while (end && (*end != ':') )
+				end++;
+
+			if (end && (*end == ':') )
+				*end = '\0';
+
+			pEEPROM->mac_addr[i] = simple_strtoul(head, NULL, 16 );
+
+			if (end) {
+				end++;
+				head = end;
+			}
+			DBG_871X("%02x \n", pEEPROM->mac_addr[i]);
+		}
+		DBG_871X("\n");
+		set_fs(fs);
+		pEEPROM->bloadmac_fail_flag = _FALSE;
+		filp_close(fp, NULL);
+	}
+
+	if ( (_rtw_memcmp(pEEPROM->mac_addr, null_mac_addr, ETH_ALEN)) ||
+		(_rtw_memcmp(pEEPROM->mac_addr, multi_mac_addr, ETH_ALEN)) ) {
+		pEEPROM->mac_addr[0] = 0x00;
+		pEEPROM->mac_addr[1] = 0xe0;
+		pEEPROM->mac_addr[2] = 0x4c;
+		pEEPROM->mac_addr[3] = (u8)(curtime & 0xff) ;
+		pEEPROM->mac_addr[4] = (u8)((curtime>>8) & 0xff) ;
+		pEEPROM->mac_addr[5] = (u8)((curtime>>16) & 0xff) ;
+	}
+
+	DBG_871X("Hal_ReadMACAddrFromFile: Permanent Address = %02x-%02x-%02x-%02x-%02x-%02x !!!\n",
+		  pEEPROM->mac_addr[0], pEEPROM->mac_addr[1],
+		  pEEPROM->mac_addr[2], pEEPROM->mac_addr[3],
+		  pEEPROM->mac_addr[4], pEEPROM->mac_addr[5]);
+}
+
+
+u32 Rtw_Hal_readPGDataFromConfigFile(PADAPTER	padapter)
+{
+	u32 i;
+	struct file *fp;
+	mm_segment_t fs;
+	u8 temp[3];
+	loff_t pos = 0;
+	EEPROM_EFUSE_PRIV *pEEPROM = GET_EEPROM_EFUSE_PRIV(padapter);
+	u8	*PROMContent = pEEPROM->efuse_eeprom_data;
+
+
+	temp[2] = 0; // add end of string '\0'
+
+	fp = filp_open("/system/etc/wifi/wifi_efuse.map", O_RDWR,  0644);
+	if (IS_ERR(fp)) {
+		pEEPROM->bloadfile_fail_flag = _TRUE;
+		DBG_871X("Error, Efuse configure file doesn't exist.\n");
+		return _FAIL;
+	}
+
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	DBG_871X("Efuse configure file:\n");
+	for (i=0; i< EFUSE_MAP_SIZE  ; i++) {
+		vfs_read(fp, temp, 2, &pos);
+		PROMContent[i] = simple_strtoul(temp, NULL, 16 );
+		pos += 1; // Filter the space character
+		DBG_871X("%02X \n", PROMContent[i]);
+	}
+	DBG_871X("\n");
+	set_fs(fs);
+
+	filp_close(fp, NULL);
+	
+	pEEPROM->bloadfile_fail_flag = _FALSE;
+	
+	return _SUCCESS;
+}
+
+#endif //#CONFIG_EFUSE_CONFIG_FILE

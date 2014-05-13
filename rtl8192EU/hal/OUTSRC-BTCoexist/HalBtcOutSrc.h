@@ -4,10 +4,10 @@
 #define		NORMAL_EXEC					FALSE
 #define		FORCE_EXEC						TRUE
 
-#define		BTC_RF_A					PathA
-#define		BTC_RF_B					PathB
-#define		BTC_RF_C					PathC
-#define		BTC_RF_D				PathD
+#define		BTC_RF_A					0x0
+#define		BTC_RF_B					0x1
+#define		BTC_RF_C					0x2
+#define		BTC_RF_D					0x3
 
 #define		BTC_SMSP				SINGLEMAC_SINGLEPHY
 #define		BTC_DMDP				DUALMAC_DUALPHY
@@ -41,6 +41,15 @@ typedef enum _BTC_POWERSAVE_TYPE{
 	BTC_PS_LPS_OFF				= 2,
 	BTC_PS_MAX
 } BTC_POWERSAVE_TYPE, *PBTC_POWERSAVE_TYPE;
+
+typedef enum _BTC_BT_REG_TYPE{
+	BTC_BT_REG_RF						= 0,
+	BTC_BT_REG_MODEM					= 1,
+	BTC_BT_REG_BLUEWIZE					= 2,
+	BTC_BT_REG_VENDOR					= 3,
+	BTC_BT_REG_LE						= 4,
+	BTC_BT_REG_MAX
+} BTC_BT_REG_TYPE, *PBTC_BT_REG_TYPE;
 
 typedef enum _BTC_CHIP_INTERFACE{
 	BTC_INTF_UNKNOWN	= 0,
@@ -178,6 +187,9 @@ typedef enum _BTC_RSSI_STATE{
 	BTC_RSSI_STATE_STAY_LOW					= 0x5,
 	BTC_RSSI_MAX
 }BTC_RSSI_STATE,*PBTC_RSSI_STATE;
+#define	BTC_RSSI_HIGH(_rssi_)	((_rssi_==BTC_RSSI_STATE_HIGH||_rssi_==BTC_RSSI_STATE_STAY_HIGH)? TRUE:FALSE)
+#define	BTC_RSSI_MEDIUM(_rssi_)	((_rssi_==BTC_RSSI_STATE_MEDIUM||_rssi_==BTC_RSSI_STATE_STAY_MEDIUM)? TRUE:FALSE)
+#define	BTC_RSSI_LOW(_rssi_)	((_rssi_==BTC_RSSI_STATE_LOW||_rssi_==BTC_RSSI_STATE_STAY_LOW)? TRUE:FALSE)
 
 typedef enum _BTC_WIFI_ROLE{
 	BTC_ROLE_STATION						= 0x0,
@@ -206,6 +218,17 @@ typedef enum _BTC_WIFI_PNP{
 	BTC_WIFI_PNP_MAX
 }BTC_WIFI_PNP,*PBTC_WIFI_PNP;
 
+//for 8723b-d cut large current issue
+typedef enum _BT_WIFI_COEX_STATE{
+	BTC_WIFI_STAT_INIT,
+	BTC_WIFI_STAT_IQK,
+	BTC_WIFI_STAT_NORMAL_OFF,
+	BTC_WIFI_STAT_MP_OFF,
+	BTC_WIFI_STAT_NORMAL,
+	BTC_WIFI_STAT_ANT_DIV,
+	BTC_WIFI_STAT_MAX
+}BT_WIFI_COEX_STATE,*PBT_WIFI_COEX_STATE;
+
 // defined for BFP_BTC_GET
 typedef enum _BTC_GET_TYPE{
 	// type BOOLEAN
@@ -221,6 +244,7 @@ typedef enum _BTC_GET_TYPE{
 	BTC_GET_BL_WIFI_AP_MODE_ENABLE,
 	BTC_GET_BL_WIFI_ENABLE_ENCRYPTION,
 	BTC_GET_BL_WIFI_UNDER_B_MODE,
+	BTC_GET_BL_WIFI_IS_IN_MP_MODE,
 	BTC_GET_BL_EXT_SWITCH,
 
 	// type s4Byte
@@ -239,6 +263,7 @@ typedef enum _BTC_GET_TYPE{
 	BTC_GET_U1_WIFI_CENTRAL_CHNL,
 	BTC_GET_U1_WIFI_HS_CHNL,
 	BTC_GET_U1_MAC_PHY_MODE,
+	BTC_GET_U1_AP_NUM,
 
 	//===== for 1Ant ======
 	BTC_GET_U1_LPS_MODE,
@@ -256,6 +281,7 @@ typedef enum _BTC_SET_TYPE{
 	BTC_SET_BL_TO_REJ_AP_AGG_PKT,
 	BTC_SET_BL_BT_CTRL_AGG_SIZE,
 	BTC_SET_BL_INC_SCAN_DEV_NUM,
+	BTC_SET_BL_BT_TX_RX_MASK,
 
 	// type u1Byte
 	BTC_SET_U1_RSSI_ADJ_VAL_FOR_AGC_TABLE_ON,
@@ -281,6 +307,7 @@ typedef enum _BTC_SET_TYPE{
 	// BT Coex related
 	BTC_SET_ACT_CTRL_BT_INFO,
 	BTC_SET_ACT_CTRL_BT_COEX,
+	BTC_SET_ACT_CTRL_8723B_ANT,
 	//=================
 	BTC_SET_MAX
 }BTC_SET_TYPE,*PBTC_SET_TYPE;
@@ -427,6 +454,19 @@ typedef	BOOLEAN
 	OUT	PVOID			pInBuf
 	);
 typedef VOID
+(*BFP_BTC_SET_BT_REG)(
+	IN 	PVOID			pBtcContext,
+	IN	u1Byte			regType,
+	IN	u4Byte			offset,
+	IN	u4Byte			value
+	);
+typedef u4Byte 
+(*BFP_BTC_GET_BT_REG)(
+	IN 	PVOID			pBtcContext,
+	IN	u1Byte			regType,
+	IN	u4Byte			offset
+	);
+typedef VOID
 (*BFP_BTC_DISP_DBG_MSG)(
 	IN	PVOID			pBtCoexist,
 	IN	u1Byte			dispType
@@ -440,6 +480,7 @@ typedef struct _BTC_BT_INFO{
 	BOOLEAN					bBtCtrlAggBufSize;
 	BOOLEAN					bRejectAggPkt;
 	BOOLEAN					bIncreaseScanDevNum;
+	BOOLEAN					bBtTxRxMask;
 	u1Byte					preAggBufSize;
 	u1Byte					aggBufSize;
 	BOOLEAN					bBtBusy;
@@ -497,6 +538,7 @@ typedef struct _BTC_STATISTICS{
 	u4Byte					cntSpecialPacketNotify;
 	u4Byte					cntBtInfoNotify;
 	u4Byte					cntPeriodical;
+	u4Byte					cntCoexDmSwitch;
 	u4Byte					cntStackOperationNotify;
 	u4Byte					cntDbgCtrl;
 } BTC_STATISTICS, *PBTC_STATISTICS;
@@ -541,6 +583,9 @@ typedef struct _BTC_COEXIST{
 	// normal get/set related
 	BFP_BTC_GET			fBtcGet;
 	BFP_BTC_SET			fBtcSet;
+
+	BFP_BTC_GET_BT_REG	fBtcGetBtReg;
+	BFP_BTC_SET_BT_REG	fBtcSetBtReg;
 } BTC_COEXIST, *PBTC_COEXIST;
 
 extern BTC_COEXIST				GLBtCoexist;
@@ -551,7 +596,8 @@ EXhalbtcoutsrc_InitlizeVariables(
 	);
 VOID
 EXhalbtcoutsrc_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	);
 VOID
 EXhalbtcoutsrc_InitCoexDm(
@@ -608,6 +654,11 @@ EXhalbtcoutsrc_PnpNotify(
 	IN	u1Byte			pnpState
 	);
 VOID
+EXhalbtcoutsrc_CoexDmSwitch(
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN 			antInverse
+	);
+VOID
 EXhalbtcoutsrc_Periodical(
 	IN	PBTC_COEXIST		pBtCoexist
 	);
@@ -646,7 +697,8 @@ EXhalbtcoutsrc_SetChipType(
 VOID
 EXhalbtcoutsrc_SetAntNum(
 	IN	u1Byte		type,
-	IN	u1Byte		antNum
+	IN	u1Byte		antNum,
+	IN	BOOLEAN 	antInverse
 	);
 VOID
 EXhalbtcoutsrc_DisplayBtCoexInfo(

@@ -122,18 +122,22 @@ typedef struct _COEX_STA_8723B_1ANT{
 
 	BOOLEAN					bUnderLps;
 	BOOLEAN					bUnderIps;
+	BOOLEAN					bFinishInitHW;
 	u4Byte					specialPktPeriodCnt;
 	u4Byte					highPriorityTx;
 	u4Byte					highPriorityRx;
 	u4Byte					lowPriorityTx;
 	u4Byte					lowPriorityRx;
 	u1Byte					btRssi;
+	BOOLEAN					bBtTxRxMask;
 	u1Byte					preBtRssiState;
 	u1Byte					preWifiRssiState[4];
 	BOOLEAN					bC2hBtInfoReqSent;
 	u1Byte					btInfoC2h[BT_INFO_SRC_8723B_1ANT_MAX][10];
 	u4Byte					btInfoC2hCnt[BT_INFO_SRC_8723B_1ANT_MAX];
 	BOOLEAN					bC2hBtInquiryPage;
+	BOOLEAN					bC2hBtPage;				//Add for win8.1 page out issue
+	BOOLEAN					bWiFiIsHighPriTask;		//Add for win8.1 page out issue
 	u1Byte					btRetryCnt;
 	u1Byte					btInfoExt;
 }COEX_STA_8723B_1ANT, *PCOEX_STA_8723B_1ANT;
@@ -143,7 +147,8 @@ typedef struct _COEX_STA_8723B_1ANT{
 //===========================================
 VOID
 EXhalbtc8723b1ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	);
 VOID
 EXhalbtc8723b1ant_InitCoexDm(
@@ -193,6 +198,10 @@ VOID
 EXhalbtc8723b1ant_PnpNotify(
 	IN	PBTC_COEXIST			pBtCoexist,
 	IN	u1Byte				pnpState
+	);
+VOID
+EXhalbtc8723b1ant_CoexDmReset(
+	IN	PBTC_COEXIST			pBtCoexist
 	);
 VOID
 EXhalbtc8723b1ant_Periodical(

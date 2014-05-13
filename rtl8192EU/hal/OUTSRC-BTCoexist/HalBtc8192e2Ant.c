@@ -3792,7 +3792,8 @@ halbtc8192e2ant_InitHwConfig(
 //============================================================
 VOID
 EXhalbtc8192e2ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	)
 {
 	halbtc8192e2ant_InitHwConfig(pBtCoexist, TRUE);

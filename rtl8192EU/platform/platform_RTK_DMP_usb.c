@@ -1,7 +1,7 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
- *                                        
+ * Copyright(c) 2013 Realtek Corporation. All rights reserved.
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
  * published by the Free Software Foundation.
@@ -17,31 +17,20 @@
  *
  *
  ******************************************************************************/
-//============================================================
-// File Name: Hal8188EReg.h
-//
-// Description:
-//
-// This file is for RTL8188E register definition.
-//
-//
-//============================================================
-#ifndef	__HAL_8188E_REG_H__
-#define __HAL_8188E_REG_H__
+#include <drv_types.h>
 
-//
-// Register Definition
-//
-#define TRX_ANTDIV_PATH             0x860
-#define RX_ANTDIV_PATH              0xb2c
-#define	ODM_R_A_AGC_CORE1_8188E		0xc50
+int platform_wifi_power_on(void)
+{
+	int ret = 0;
+	u32 tmp;
+	tmp=readl((volatile unsigned int*)0xb801a608);
+	tmp &= 0xffffff00;
+	tmp |= 0x55;
+	writel(tmp,(volatile unsigned int*)0xb801a608);//write dummy register for 1055
+	return ret;
+}
 
-
-//
-// Bitmap Definition
-//
-#define	BIT_FA_RESET_8188E			BIT0
-
-
-#endif
+void platform_wifi_power_off(void)
+{
+}
 

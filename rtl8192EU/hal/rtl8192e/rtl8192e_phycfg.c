@@ -372,7 +372,7 @@ phy_BB8192E_Config_ParaFile(
 
 	//DBG_871X(" ===> phy_BB8192E_Config_ParaFile() phy_reg:%s\n",pszBBRegFile);
 	//DBG_871X(" ===> phy_BB8192E_Config_ParaFile() phy_reg_pg:%s\n",pszBBRegPgFile);
-	//DBG_871X(" ===> phy_BB8192E_Config_ParaFile() agc_table:%s\n",pszAGCTableFile);
+	//DBG_871X(" ===> phy_BB8192E_Config_ParaFile() txpwr_lmt_table:%s\n",pszRFTxPwrLmtFile);
 
 	PHY_InitTxPowerLimit( Adapter );
 
@@ -491,26 +491,26 @@ PHY_BBConfig8192E(
 {
 	int	rtStatus = _SUCCESS;
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
-	u8	TmpU1B=0;
+	u16	TmpU2B=0;
 	u8	CrystalCap;
 
 	phy_InitBBRFRegisterDefinition(Adapter);
 
 	// Enable BB and RF
-	TmpU1B = rtw_read16(Adapter, REG_SYS_FUNC_EN);
+	TmpU2B = rtw_read16(Adapter, REG_SYS_FUNC_EN);
 
 #ifdef CONFIG_PCI_HCI	
 	if(IS_HARDWARE_TYPE_8192EE(Adapter))
-		TmpU1B |= (FEN_PPLL|FEN_PCIEA|FEN_DIO_PCIE);
+		TmpU2B |= (FEN_PPLL|FEN_PCIEA|FEN_DIO_PCIE);
 #endif
 #ifdef CONFIG_USB_HCI
 	if(IS_HARDWARE_TYPE_8192EU(Adapter))
-		TmpU1B |= (FEN_USBA| FEN_USBD);
+		TmpU2B |= (FEN_USBA| FEN_USBD);
 #endif
 
-	TmpU1B |=  (BIT13|FEN_BB_GLB_RSTn|FEN_BBRSTB);
+	TmpU2B |=  (FEN_EN_25_1|FEN_BB_GLB_RSTn|FEN_BBRSTB);
 
-	rtw_write8(Adapter, REG_SYS_FUNC_EN, TmpU1B);
+	rtw_write16(Adapter, REG_SYS_FUNC_EN, TmpU2B);
 
 	//6. 0x1f[7:0] = 0x07 PathA RF Power On
 	rtw_write8(Adapter, REG_RF_CTRL, RF_EN|RF_RSTB|RF_SDMRSTB);
@@ -864,7 +864,7 @@ PHY_GetTxPowerIndex_8192E(
 	)
 {
 	PHAL_DATA_TYPE		pHalData = GET_HAL_DATA(pAdapter);
-	s8					txPower = 0, powerDiffByRate = 0, limit = 0;
+	s8					txPower = 0, powerDiffByRate = 0, limit = 0,tpt_offset=0;
 	u8					txNum = phy_GetCurrentTxNum_8192E( pAdapter, Rate );
 	BOOLEAN				bIn24G = _FALSE;
 
@@ -876,17 +876,23 @@ PHY_GetTxPowerIndex_8192E(
 
 	limit = PHY_GetTxPowerLimit( pAdapter, pAdapter->registrypriv.RegPwrTblSel, (u8)(!bIn24G), pHalData->CurrentChannelBW, RFPath, Rate, pHalData->CurrentChannel);
 
+	tpt_offset =  PHY_GetTxPowerTrackingOffset( pAdapter, RFPath, Rate );
+
+#if defined(DBG_TX_POWER_IDX)			
+	DBG_871X("%s (RF-%c, Channel: %d, BW:0x%02x ,Rate:0x%02x) \n==> txPower= (0x%02x),powerDiffByRate= (0x%02x),limit= (0x%02x),tpt_offset=(0x%02x)\n",
+		__FUNCTION__,((RFPath==0)?'A':'B'), Channel,BandWidth,Rate,txPower,powerDiffByRate,limit,tpt_offset);
+#endif
 	powerDiffByRate = powerDiffByRate > limit ? limit : powerDiffByRate;
 
 	txPower += powerDiffByRate;
 
-	txPower += PHY_GetTxPowerTrackingOffset( pAdapter, RFPath, Rate );
+	txPower += tpt_offset;
 
 	if(txPower > MAX_POWER_INDEX)
 		txPower = MAX_POWER_INDEX;
-
-	//DBG_871X("Final Tx Power(RF-%c, Channel: %d) = %d(0x%X)\n", ((RFPath==0)?'A':'B'), Channel, txPower, txPower);
-
+#if defined(DBG_TX_POWER_IDX)	
+	DBG_871X("Final Tx Power(RF-%c, Channel: %d) = %d(0x%X)\n\n", ((RFPath==0)?'A':'B'), Channel, txPower, txPower);
+#endif
 	return (u8)txPower;	
 }
 
@@ -964,22 +970,22 @@ phy_SetRegBW_8192E(
 )	
 {
 	u16	RegRfMod_BW, u2tmp = 0;
-	RegRfMod_BW = rtw_read16(Adapter, REG_WMAC_TRXPTCL_CTL);
+	RegRfMod_BW = rtw_read16(Adapter, REG_TRXPTCL_CTL_8192E);
 
 	switch(CurrentBW)
 	{
 		case CHANNEL_WIDTH_20:
-			rtw_write16(Adapter, REG_WMAC_TRXPTCL_CTL, (RegRfMod_BW & 0xFE7F)); // BIT 7 = 0, BIT 8 = 0
+			rtw_write16(Adapter, REG_TRXPTCL_CTL_8192E, (RegRfMod_BW & 0xFE7F)); // BIT 7 = 0, BIT 8 = 0
 			break;
 
 		case CHANNEL_WIDTH_40:
 			u2tmp = RegRfMod_BW | BIT7;
-			rtw_write16(Adapter, REG_WMAC_TRXPTCL_CTL, (u2tmp & 0xFEFF)); // BIT 7 = 1, BIT 8 = 0
+			rtw_write16(Adapter, REG_TRXPTCL_CTL_8192E, (u2tmp & 0xFEFF)); // BIT 7 = 1, BIT 8 = 0
 			break;
 
 		case CHANNEL_WIDTH_80:
 			u2tmp = RegRfMod_BW | BIT8;
-			rtw_write16(Adapter, REG_WMAC_TRXPTCL_CTL, (u2tmp & 0xFF7F)); // BIT 7 = 0, BIT 8 = 1
+			rtw_write16(Adapter, REG_TRXPTCL_CTL_8192E, (u2tmp & 0xFF7F)); // BIT 7 = 0, BIT 8 = 1
 			break;
 
 		default:

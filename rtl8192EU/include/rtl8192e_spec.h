@@ -62,6 +62,7 @@
 #define REG_PKTBUF_DBG_ADDR 			(REG_PKTBUF_DBG_CTRL)
 #define REG_RXPKTBUF_DBG				(REG_PKTBUF_DBG_CTRL+2)
 #define REG_TXPKTBUF_DBG				(REG_PKTBUF_DBG_CTRL+3)
+#define REG_WOWLAN_WAKE_REASON		REG_MCUTST_WOWLAN
 
 #define REG_RSVD3_8192E					0x0168
 #define REG_C2HEVT_CMD_SEQ_88XX		0x01A1
@@ -78,9 +79,6 @@
 //	0x0200h ~ 0x027Fh	TXDMA Configuration
 //
 //-----------------------------------------------------
-#define REG_DWBCN0_CTRL				0x0208
-#define REG_DWBCN1_CTRL				0x0228
-
 
 //-----------------------------------------------------
 //

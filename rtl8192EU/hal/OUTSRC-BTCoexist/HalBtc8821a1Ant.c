@@ -1702,29 +1702,6 @@ halbtc8821a1ant_CoexUnder5G(
 	halbtc8821a1ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 5);
 }
 
-#define WIFI_ONLY_CHECK_UNDER_5G
-#ifdef WIFI_ONLY_CHECK_UNDER_5G
-VOID
-halbtc8821a1ant_ActionWifiOnly(
-	IN	PBTC_COEXIST		pBtCoexist
-	)
-{
-	BOOLEAN	 bWifiUnder5G=FALSE;
-
-	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_BL_WIFI_UNDER_5G, &bWifiUnder5G);
-
-	if (bWifiUnder5G)
-	{
-		halbtc8821a1ant_CoexUnder5G(pBtCoexist);
-		return;
-	}
-	else
-	{
-		halbtc8821a1ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8821a1ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 9);
-	}
-}
-#else
 VOID
 halbtc8821a1ant_ActionWifiOnly(
 	IN	PBTC_COEXIST		pBtCoexist
@@ -1733,7 +1710,6 @@ halbtc8821a1ant_ActionWifiOnly(
 	halbtc8821a1ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
 	halbtc8821a1ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 9);	
 }
-#endif
 
 VOID
 halbtc8821a1ant_MonitorBtEnableDisable(
@@ -2457,7 +2433,8 @@ halbtc8821a1ant_InitHwConfig(
 //============================================================
 VOID
 EXhalbtc8821a1ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	)
 {
 	halbtc8821a1ant_InitHwConfig(pBtCoexist, TRUE);

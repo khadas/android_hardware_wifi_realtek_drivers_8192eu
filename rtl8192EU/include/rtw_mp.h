@@ -127,8 +127,9 @@ struct mp_tx
 	u32 count, sended;
 	u8 payload;
 	struct pkt_attrib attrib;
-	struct tx_desc desc;
-	u8 resvdtx[7];
+	//struct tx_desc desc;
+	//u8 resvdtx[7];
+	u8 desc[TXDESC_SIZE];
 	u8 *pallocated_buf;
 	u8 *buf;
 	u32 buf_size, write_size;
@@ -272,7 +273,7 @@ typedef struct _MPT_CONTEXT
 	u4Byte			backup0x58_RF_B;
 	
 	u1Byte			h2cReqNum;
-	u1Byte			c2hBuf[20];
+	u1Byte			c2hBuf[32];
 
     u1Byte          btInBuf[100];
 	ULONG			mptOutLen;
@@ -346,6 +347,9 @@ enum {
 	CTA_TEST,
 	MP_DISABLE_BT_COEXIST,
 	MP_PwrCtlDM,
+#ifdef CONFIG_AP_WOWLAN
+	MP_AP_WOW_ENABLE,
+#endif
 	MP_NULL,
 	MP_GET_TXPOWER_INX,
 };
@@ -366,11 +370,13 @@ struct mp_priv
 	//Tx Section
 	u8 TID;
 	u32 tx_pktcount;
+	u32 pktInterval;
 	struct mp_tx tx;
 
 	//Rx Section
 	u32 rx_bssidpktcount;
 	u32 rx_pktcount;
+	u32 rx_pktcount_filter_out;
 	u32 rx_crcerrpktcount;
 	u32 rx_pktloss;
 
@@ -397,6 +403,9 @@ struct mp_priv
 	u8 bSetTxPower;
 //	uint ForcedDataRate;
 	u8 mp_dm;
+	u8 mac_filter[ETH_ALEN];
+	u8 bmac_filter;
+	
 	struct wlan_network mp_network;
 	NDIS_802_11_MAC_ADDRESS network_macaddr;
 
@@ -733,7 +742,7 @@ extern void	SetSingleToneTx(PADAPTER pAdapter, u8 bStart);
 extern void	SetCarrierSuppressionTx(PADAPTER pAdapter, u8 bStart);
 extern void PhySetTxPowerLevel(PADAPTER pAdapter);
 
-extern void	fill_txdesc_for_mp(PADAPTER padapter, struct tx_desc *ptxdesc);
+extern void	fill_txdesc_for_mp(PADAPTER padapter, u8 *ptxdesc);
 extern void	SetPacketTx(PADAPTER padapter);
 extern void	SetPacketRx(PADAPTER pAdapter, u8 bStartRx);
 

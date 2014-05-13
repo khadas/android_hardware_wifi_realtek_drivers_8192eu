@@ -74,6 +74,7 @@
 #endif
 
 #define CONFIG_HIGH_CHAN_SUPER_CALIBRATION
+//#define CONFIG_DISABLE_MCS13TO15	1	// Disable MSC13-15 rates for more stable TX throughput with some 5G APs
 
 #define CONFIG_IPS	
 	#ifdef CONFIG_IPS
@@ -112,7 +113,7 @@
 	//#define CONFIG_HWPORT_SWAP				//Port0->Sec , Port1 -> Pri
 	#define CONFIG_RUNTIME_PORT_SWITCH
 	//#define DBG_RUNTIME_PORT_SWITCH
-	//#define CONFIG_STA_MODE_SCAN_UNDER_AP_MODE
+	#define CONFIG_STA_MODE_SCAN_UNDER_AP_MODE
 	//#define CONFIG_ATMEL_RC_PATCH
 	//#define CONFIG_TSF_RESET_OFFLOAD 			// For 2 PORT TSF SYNC.
 #endif
@@ -152,9 +153,10 @@
 	//#define CONFIG_DBG_P2P
 
 	#define CONFIG_P2P_PS
-	//#define CONFIG_P2P_IPS
+	#define CONFIG_P2P_IPS
 	#define CONFIG_P2P_OP_CHK_SOCIAL_CH
-	#define CONFIG_P2P_CHK_INVITE_CH_LIST
+	#define CONFIG_CFG80211_ONECHANNEL_UNDER_CONCURRENT  //replace CONFIG_P2P_CHK_INVITE_CH_LIST flag
+	#define CONFIG_P2P_INVITE_IOT
 #endif
 
 //	Added by Kurt 20110511
@@ -167,12 +169,13 @@
 //	#define CONFIG_TDLS_AUTOCHECKALIVE		
 #endif
 
+//#define CONFIG_EFUSE_CONFIG_FILE
 
 #define CONFIG_SKB_COPY	//for amsdu
 
 //#define CONFIG_LED
 #ifdef CONFIG_LED
-	#define CONFIG_SW_LED
+	//#define CONFIG_SW_LED
 	#ifdef CONFIG_SW_LED
 		//#define CONFIG_LED_HANDLED_BY_CMD_THREAD
 	#endif
@@ -229,7 +232,7 @@
  * CONFIG_USE_USB_BUFFER_ALLOC_XX uses Linux USB Buffer alloc API and is for Linux platform only now!
  */
 //#define CONFIG_USE_USB_BUFFER_ALLOC_TX 	// Trade-off: For TX path, improve stability on some platforms, but may cause performance degrade on other platforms.
-//#define CONFIG_USE_USB_BUFFER_ALLOC_RX 	// For RX path
+#define CONFIG_USE_USB_BUFFER_ALLOC_RX 	// For RX path
 
 #ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
 #undef CONFIG_PREALLOC_RECV_SKB
@@ -247,6 +250,7 @@
 
 //#define CONFIG_USB_SUPPORT_ASYNC_VDN_REQ 
 
+#define WAKEUP_GPIO_IDX	14	//WIFI Chip Side
 
 /*
  * HAL  Related Config
@@ -390,8 +394,9 @@
 //#define DBG_RX_SEQ
 //#define DBG_RX_SIGNAL_DISPLAY_PROCESSING
 //#define DBG_RX_SIGNAL_DISPLAY_SSID_MONITORED "jeff-ap"
+#define DBG_RX_SIGNAL_DISPLAY_RAW_DATA
 
-
+//#define DBG_TX_POWER_IDX
 
 //#define DBG_SHOW_MCUFWDL_BEFORE_51_ENABLE
 //#define DBG_ROAMING_TEST

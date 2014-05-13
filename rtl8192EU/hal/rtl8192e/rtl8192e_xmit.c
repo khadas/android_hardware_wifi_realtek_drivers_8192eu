@@ -261,28 +261,19 @@ BWMapping_92E(
 
 	//DBG_871X("BWMapping pHalData->CurrentChannelBW %d, pattrib->bwmode %d \n",pHalData->CurrentChannelBW,pattrib->bwmode);
 
-	if(pHalData->CurrentChannelBW== CHANNEL_WIDTH_80)
+	if(pHalData->CurrentChannelBW== CHANNEL_WIDTH_40)
 	{
-		if(pattrib->bwmode == CHANNEL_WIDTH_80)
-			BWSettingOfDesc= 2;
-		else if(pattrib->bwmode == CHANNEL_WIDTH_40)
-			BWSettingOfDesc = 1;
-		else
-			BWSettingOfDesc = 0;
-	}
-	else if(pHalData->CurrentChannelBW== CHANNEL_WIDTH_40)
-	{
-		if((pattrib->bwmode == CHANNEL_WIDTH_40) || (pattrib->bwmode == CHANNEL_WIDTH_80))
+		if(pattrib->bwmode == CHANNEL_WIDTH_40)
 			BWSettingOfDesc = 1;
 		else
 			BWSettingOfDesc = 0;
 	}
 	else
 		BWSettingOfDesc = 0;
-
-	if(pattrib->bwmode)
-		BWSettingOfDesc = 0;
 	
+	//if(pTcb->bBTTxPacket)
+	//	BWSettingOfDesc = 0;
+
 	return BWSettingOfDesc;
 }
 

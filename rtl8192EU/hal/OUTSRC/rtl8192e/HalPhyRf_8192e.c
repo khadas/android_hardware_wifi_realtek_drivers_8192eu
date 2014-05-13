@@ -59,7 +59,7 @@ void setIqkMatrix_8192E(
 			IqkResult_Y = IqkResult_Y | 0xFFFFFC00;
 		ele_C = ((IqkResult_Y * ele_D)>>8)&0x000003FF;
 
-		if (RFPath == ODM_RF_PATH_A)
+		//if (RFPath == ODM_RF_PATH_A)
 		switch (RFPath)
 		{
 		case ODM_RF_PATH_A:
@@ -716,7 +716,7 @@ void ConfigureTxpowerTrack_8192E(
 	pConfig->Threshold_IQK = IQK_THRESHOLD;
 	pConfig->AverageThermalNum = AVG_THERMAL_NUM_92E;
 	pConfig->RfPathCount = MAX_PATH_NUM_8192E;
-	pConfig->ThermalRegAddr = RF_T_METER_88E;
+	pConfig->ThermalRegAddr = RF_T_METER_8192E;
 		
 	pConfig->ODM_TxPwrTrackSetPwr = ODM_TxPwrTrackSetPwr92E;
 	pConfig->DoIQK = DoIQK_8192E;
@@ -1733,7 +1733,7 @@ phy_SimularityCompare_8192E(
 //#if !(DM_ODM_SUPPORT_TYPE & ODM_AP)
 //	BOOLEAN		is2T = IS_92C_SERIAL( pHalData->VersionID);
 //#else
-	BOOLEAN		is2T = TRUE;
+	BOOLEAN		is2T = IS_2T2R(pHalData->VersionID);
 //#endif
 
 	s4Byte tmp1 = 0,tmp2 = 0;
@@ -1884,7 +1884,7 @@ phy_IQCalibrate_8192E(
 							rOFDM0_TRxPathEnable, 		rOFDM0_TRMuxPar,	
 							rFPGA0_XCD_RFInterfaceSW,	rConfig_AntA,	rConfig_AntB,
 							rFPGA0_XAB_RFInterfaceSW,	rFPGA0_XA_RFInterfaceOE,	
-							rFPGA0_XB_RFInterfaceOE,	rFPGA0_RFMOD	
+							rFPGA0_XB_RFInterfaceOE,	 rCCK0_AFESetting	
 							};	
 
 	u4Byte	retryCount = 2;
@@ -1951,8 +1951,16 @@ phy_IQCalibrate_8192E(
 #endif
 	}
 */	
+	//MAC settings
+#if !(DM_ODM_SUPPORT_TYPE & ODM_AP)
+	_PHY_MACSettingCalibration_92E(pAdapter, IQK_MAC_REG, pDM_Odm->RFCalibrateInfo.IQK_MAC_backup);
+#else
+	_PHY_MACSettingCalibration_92E(pDM_Odm, IQK_MAC_REG, pDM_Odm->RFCalibrateInfo.IQK_MAC_backup);
+#endif
+
 	//BB setting
-	ODM_SetBBReg(pDM_Odm, rFPGA0_RFMOD, BIT24, 0x00);		
+	//ODM_SetBBReg(pDM_Odm, rFPGA0_RFMOD, BIT24, 0x00);
+	ODM_SetBBReg(pDM_Odm, rCCK0_AFESetting, 0x0f000000, 0xf);	
 	ODM_SetBBReg(pDM_Odm, rOFDM0_TRxPathEnable, bMaskDWord, 0x03a05600);
 	ODM_SetBBReg(pDM_Odm, rOFDM0_TRMuxPar, bMaskDWord, 0x000800e4);
 	ODM_SetBBReg(pDM_Odm, rFPGA0_XCD_RFInterfaceSW, bMaskDWord, 0x22208200);
@@ -1971,13 +1979,6 @@ phy_IQCalibrate_8192E(
 //		ODM_SetBBReg(pDM_Odm, rFPGA0_XA_LSSIParameter, bMaskDWord, 0x00010000);
 //		ODM_SetBBReg(pDM_Odm, rFPGA0_XB_LSSIParameter, bMaskDWord, 0x00010000);
 //	}
-
-	//MAC settings
-#if !(DM_ODM_SUPPORT_TYPE & ODM_AP)
-	_PHY_MACSettingCalibration_92E(pAdapter, IQK_MAC_REG, pDM_Odm->RFCalibrateInfo.IQK_MAC_backup);
-#else
-	_PHY_MACSettingCalibration_92E(pDM_Odm, IQK_MAC_REG, pDM_Odm->RFCalibrateInfo.IQK_MAC_backup);
-#endif
 
 
 	//Page B init
@@ -2807,6 +2808,8 @@ PHY_IQCalibrate_8192E(
 					rOFDM0_XATxIQImbalance, 	rOFDM0_XBTxIQImbalance, 
 					rOFDM0_XCTxAFE, 			rOFDM0_XDTxAFE, 
 					rOFDM0_RxIQExtAnta};
+	u4Byte			StartTime; 
+	s4Byte			ProgressingTime;
 
 #if (DM_ODM_SUPPORT_TYPE & (ODM_WIN|ODM_CE) )
 	if (ODM_CheckPowerStatus(pAdapter) == FALSE)
@@ -2875,6 +2878,7 @@ PHY_IQCalibrate_8192E(
 #endif
 		return;		
 	}
+	StartTime = ODM_GetCurrentTime( pDM_Odm);
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("IQK:Start!!!\n"));
 
 	for(i = 0; i < 8; i++)
@@ -3056,6 +3060,8 @@ PHY_IQCalibrate_8192E(
 	ODM_ReleaseSpinLock(pDM_Odm, RT_IQK_SPINLOCK);
 
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("IQK finished\n"));
+	ProgressingTime = ODM_GetProgressingTime( pDM_Odm, StartTime);
+	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("IQK ProgressingTime = %d\n", ProgressingTime));
 
 }
 
@@ -3067,6 +3073,8 @@ PHY_LCCalibrate_8192E(
 {
 	BOOLEAN 		bStartContTx = FALSE, bSingleTone = FALSE, bCarrierSuppression = FALSE;
 	u4Byte			timeout = 2000, timecount = 0;
+	u4Byte			StartTime; 
+	s4Byte			ProgressingTime;
 
 #if !(DM_ODM_SUPPORT_TYPE & ODM_AP)
 	PADAPTER  		pAdapter = pDM_Odm->Adapter;
@@ -3107,6 +3115,8 @@ PHY_LCCalibrate_8192E(
 	if(bSingleTone || bCarrierSuppression)
 		return;
 
+	StartTime = ODM_GetCurrentTime( pDM_Odm);
+
 	while(*(pDM_Odm->pbScanInProcess) && timecount < timeout)
 	{
 		ODM_delay_ms(50);
@@ -3136,7 +3146,8 @@ PHY_LCCalibrate_8192E(
 	pDM_Odm->RFCalibrateInfo.bLCKInProgress = FALSE;
 
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD, ("LCK:Finish!!!interface %d\n", pDM_Odm->InterfaceIndex));
-
+	ProgressingTime = ODM_GetProgressingTime( pDM_Odm, StartTime);
+	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD,  ("LCK ProgressingTime = %d\n", ProgressingTime));
 }
 
 VOID

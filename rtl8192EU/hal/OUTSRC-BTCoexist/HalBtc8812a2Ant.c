@@ -28,8 +28,8 @@ const char *const GLBtInfoSrc8812a2Ant[]={
 	"BT Info[bt auto report]",
 };
 
-u4Byte	GLCoexVerDate8812a2Ant=20130916;
-u4Byte	GLCoexVer8812a2Ant=0x34;
+u4Byte	GLCoexVerDate8812a2Ant=20131017;
+u4Byte	GLCoexVer8812a2Ant=0x36;
 
 //============================================================
 // local function proto type if needed
@@ -853,7 +853,7 @@ halbtc8812a2ant_ActionAlgorithm(
 				if(bBtHsOn)
 				{
 					BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], HID + A2DP + PAN(HS)\n"));
-					algorithm = BT_8812A_2ANT_COEX_ALGO_HID_A2DP;
+					algorithm = BT_8812A_2ANT_COEX_ALGO_HID_A2DP_PANHS;
 				}
 				else
 				{
@@ -1314,6 +1314,9 @@ halbtc8812a2ant_CoexTableWithType(
 		case 4:
 			halbtc8812a2ant_CoexTable(pBtCoexist, bForceExec, 0xdfffdfff, 0x5fdb5fdb, 0xffffff, 0x3);
 			break;
+		case 5:
+			halbtc8812a2ant_CoexTable(pBtCoexist, bForceExec, 0x5ddd5ddd, 0x5fdb5fdb, 0xffffff, 0x3);
+			break;
 
 		default:
 			break;
@@ -1396,6 +1399,52 @@ halbtc8812a2ant_SetFwPstdma(
 		H2C_Parameter[1]<<24|H2C_Parameter[2]<<16|H2C_Parameter[3]<<8|H2C_Parameter[4]));
 
 	pBtCoexist->fBtcFillH2c(pBtCoexist, 0x60, 5, H2C_Parameter);
+}
+
+VOID
+halbtc8812a2ant_SetLpsRpwm(
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	u1Byte			lpsVal,
+	IN	u1Byte			rpwmVal
+	)
+{
+	u1Byte	lps=lpsVal;
+	u1Byte	rpwm=rpwmVal;
+	
+	pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_U1_LPS_VAL, &lps);
+	pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_U1_RPWM_VAL, &rpwm);
+}
+
+VOID
+halbtc8812a2ant_LpsRpwm(
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN			bForceExec,
+	IN	u1Byte			lpsVal,
+	IN	u1Byte			rpwmVal
+	)
+{
+	BOOLEAN	bForceExecPwrCmd=FALSE;
+	
+	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW, ("[BTCoex], %s set lps/rpwm=0x%x/0x%x \n", 
+		(bForceExec? "force to":""), lpsVal, rpwmVal));
+	pCoexDm->curLps = lpsVal;
+	pCoexDm->curRpwm = rpwmVal;
+
+	if(!bForceExec)
+	{
+		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], preLps/curLps=0x%x/0x%x, preRpwm/curRpwm=0x%x/0x%x!!\n", 
+			pCoexDm->preLps, pCoexDm->curLps, pCoexDm->preRpwm, pCoexDm->curRpwm));
+
+		if( (pCoexDm->preLps == pCoexDm->curLps) &&
+			(pCoexDm->preRpwm == pCoexDm->curRpwm) )
+		{
+			return;
+		}
+	}
+	halbtc8812a2ant_SetLpsRpwm(pBtCoexist, lpsVal, rpwmVal);
+
+	pCoexDm->preLps = pCoexDm->curLps;
+	pCoexDm->preRpwm = pCoexDm->curRpwm;
 }
 
 VOID
@@ -1518,16 +1567,16 @@ halbtc8812a2ant_PsTdma(
 				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x10, 0x03, 0xb1, 0x90);
 				break;
 			case 5:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1a, 0x1a, 0x0, 0x90);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1a, 0x1a, 0x21, 0x10);
 				break;
 			case 6:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x12, 0x12, 0x0, 0x90);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x12, 0x12, 0x21, 0x10);
 				break;
 			case 7:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1c, 0x3, 0x10, 0x90);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1c, 0x3, 0x21, 0x10);
 				break;
 			case 8:	
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x10, 0x3, 0x10, 0x90);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x10, 0x3, 0x21, 0x10);
 				break;
 			case 9:	
 				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1a, 0x1a, 0xa1, 0x10);
@@ -1542,16 +1591,16 @@ halbtc8812a2ant_PsTdma(
 				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x10, 0x03, 0xb1, 0x10);
 				break;
 			case 13:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1a, 0x1a, 0x80, 0x10);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1a, 0x1a, 0x21, 0x10);
 				break;
 			case 14:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x12, 0x12, 0x80, 0x10);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x12, 0x12, 0x21, 0x10);
 				break;
 			case 15:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1c, 0x03, 0x90, 0x10);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1c, 0x03, 0x21, 0x10);
 				break;
 			case 16:
-				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x10, 0x03, 0x90, 0x10);
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x10, 0x03, 0x21, 0x10);
 				break;
 			case 17:
 				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x15, 0x03, 0xb1, 0x10);
@@ -1570,6 +1619,26 @@ halbtc8812a2ant_PsTdma(
 				break;
 			case 71:
 				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xe3, 0x1a, 0x1a, 0xe1, 0x90);
+				break;
+
+			// following cases is for wifi rssi low, started from 81
+			case 81:
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xd3, 0x3a, 0x3, 0x90, 0x50);
+				break;
+			case 82:
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xd3, 0x2b, 0x3, 0x90, 0x50);
+				break;
+			case 83:
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xd3, 0x21, 0x3, 0x90, 0x50);
+				break;
+			case 84:
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xd3, 0x15, 0x3, 0x90, 0x50);
+				break;
+			case 85:
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xd3, 0x1d, 0x1d, 0x80, 0x50);
+				break;
+			case 86:
+				halbtc8812a2ant_SetFwPstdma(pBtCoexist, 0xd3, 0x15, 0x15, 0x80, 0x50);
 				break;
 		}
 	}
@@ -1633,14 +1702,74 @@ halbtc8812a2ant_InitCoexDm(
 }
 
 VOID
+halbtc8812a2ant_PsTdmaCheckForPowerSaveState(
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN			bNewPsState
+	)
+{
+	u1Byte	lpsMode=0x0;
+
+	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U1_LPS_MODE, &lpsMode);
+	
+	if(lpsMode)	// already under LPS state
+	{
+		if(bNewPsState)		
+		{
+			// keep state under LPS, do nothing.
+		}
+		else
+		{
+			// will leave LPS state, turn off psTdma first
+			halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 0);
+		}
+	}
+	else						// NO PS state
+	{
+		if(bNewPsState)
+		{
+			// will enter LPS state, turn off psTdma first
+			halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 0);
+		}
+		else
+		{
+			// keep state under NO PS state, do nothing.
+		}
+	}
+}
+
+VOID
+halbtc8812a2ant_PowerSaveState(
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	u1Byte				psType,
+	IN	BOOLEAN				bLowPwrDisable,
+	IN	u1Byte				lpsVal,
+	IN	u1Byte				rpwmVal
+	)
+{
+	switch(psType)
+	{
+		case BTC_PS_WIFI_NATIVE:
+			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
+			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_NORMAL_LPS, NULL);
+			break;
+		case BTC_PS_LPS_ON:
+			halbtc8812a2ant_PsTdmaCheckForPowerSaveState(pBtCoexist, TRUE);
+			halbtc8812a2ant_LpsRpwm(pBtCoexist, NORMAL_EXEC, lpsVal, rpwmVal);
+			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
+			// power save must executed before psTdma.
+			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_ENTER_LPS, NULL);
+			break;
+		default:
+			break;
+	}
+}
+
+VOID
 halbtc8812a2ant_ActionBtInquiry(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	BOOLEAN	bLowPwrDisable=TRUE;
-	
-	pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
-
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
 
 	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
 	halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 3);
@@ -1656,9 +1785,10 @@ halbtc8812a2ant_IsCommonAction(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
+	u1Byte				wifiRssiState=BTC_RSSI_STATE_HIGH;
 	PBTC_BT_LINK_INFO	pBtLinkInfo=&pBtCoexist->btLinkInfo;
-	BOOLEAN			bCommon=FALSE, bWifiConnected=FALSE, bWifiBusy=FALSE;
-	BOOLEAN			bBtHsOn=FALSE, bLowPwrDisable=FALSE;
+	BOOLEAN				bCommon=FALSE, bWifiConnected=FALSE, bWifiBusy=FALSE;
+	BOOLEAN				bBtHsOn=FALSE;
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_BL_HS_OPERATION, &bBtHsOn);
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_BL_WIFI_CONNECTED, &bWifiConnected);
@@ -1675,8 +1805,8 @@ halbtc8812a2ant_IsCommonAction(
 
 	if(!bWifiConnected)
 	{
-		bLowPwrDisable = FALSE;
-		pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, FALSE, 0x0, 0x0);
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
 		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Wifi non-connected idle!!\n"));
 
@@ -1704,10 +1834,9 @@ halbtc8812a2ant_IsCommonAction(
 	{
 		if(BT_8812A_2ANT_BT_STATUS_NON_CONNECTED_IDLE == pCoexDm->btStatus)
 		{
-			bLowPwrDisable = FALSE;
-			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
-
 			BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Wifi connected + BT non connected-idle!!\n"));
+			halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, FALSE, 0x0, 0x0);
+			halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
 			halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 1);
 			halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 0);		
@@ -1721,12 +1850,12 @@ halbtc8812a2ant_IsCommonAction(
 		}
 		else if(BT_8812A_2ANT_BT_STATUS_CONNECTED_IDLE == pCoexDm->btStatus)
 		{
-			bLowPwrDisable = TRUE;
-			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
-
 			if(bBtHsOn)
 				return FALSE;
+
 			BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Wifi connected + BT connected-idle!!\n"));
+			halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+			halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
 			halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 1);
 			halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 0);
@@ -1740,9 +1869,6 @@ halbtc8812a2ant_IsCommonAction(
 		}
 		else
 		{
-			bLowPwrDisable = TRUE;
-			pBtCoexist->fBtcSet(pBtCoexist, BTC_SET_ACT_DISABLE_LOW_POWER, &bLowPwrDisable);
-
 			if(bWifiBusy)
 			{
 				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Wifi Connected-Busy + BT Busy!!\n"));
@@ -1751,9 +1877,24 @@ halbtc8812a2ant_IsCommonAction(
 			else
 			{
 				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Wifi Connected-Idle + BT Busy!!\n"));
+				wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 
-				halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 4);
-				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 17);
+				if(BTC_RSSI_HIGH(wifiRssiState)) 
+					halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+				else
+					halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
+					
+				halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+
+				if(BTC_RSSI_HIGH(wifiRssiState))
+					halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 4);
+				else
+					halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
+
+				if(BTC_RSSI_HIGH(wifiRssiState))
+					halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 17);
+				else
+					halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 83);
 				halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 				halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
 				halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,FALSE,FALSE,FALSE);
@@ -1765,6 +1906,7 @@ halbtc8812a2ant_IsCommonAction(
 
 	return bCommon;
 }
+
 VOID
 halbtc8812a2ant_TdmaDurationAdjust(
 	IN	PBTC_COEXIST		pBtCoexist,
@@ -1779,6 +1921,8 @@ halbtc8812a2ant_TdmaDurationAdjust(
 
 	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW, ("[BTCoex], TdmaDurationAdjust()\n"));
 
+	pCoexDm->bAutoTdmaAdjustLowRssi = FALSE;
+	
 	if(!pCoexDm->bAutoTdmaAdjust)
 	{
 		pCoexDm->bAutoTdmaAdjust = TRUE;
@@ -2676,51 +2820,239 @@ halbtc8812a2ant_TdmaDurationAdjust(
 	}
 }
 
+//==================
+// pstdma for wifi rssi low
+//==================
+VOID
+halbtc8812a2ant_TdmaDurationAdjustForWifiRssiLow(
+	IN	PBTC_COEXIST		pBtCoexist//,
+	//IN	u1Byte				wifiStatus
+	)
+{
+	static s4Byte		up,dn,m,n,WaitCount;
+	s4Byte			result;   //0: no change, +1: increase WiFi duration, -1: decrease WiFi duration
+	u1Byte			retryCount=0, btInfoExt;
+
+	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW, ("[BTCoex], halbtc8812a2ant_TdmaDurationAdjustForWifiRssiLow()\n"));
+#if 0
+	if( (BT_8812A_2ANT_WIFI_STATUS_NON_CONNECTED_ASSO_AUTH_SCAN == wifiStatus) ||
+		(BT_8812A_2ANT_WIFI_STATUS_CONNECTED_SCAN == wifiStatus) ||
+		(BT_8812A_2ANT_WIFI_STATUS_CONNECTED_SPECIAL_PKT == wifiStatus) )
+	{
+		if( pCoexDm->curPsTdma != 81 &&
+			pCoexDm->curPsTdma != 82 &&
+			pCoexDm->curPsTdma != 83 &&
+			pCoexDm->curPsTdma != 84 )
+		{
+			halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 82);
+			pCoexDm->psTdmaDuAdjType = 82;
+
+			up = 0;
+			dn = 0;
+			m = 1;
+			n= 3;
+			result = 0;
+			WaitCount = 0;
+		}		
+		return;
+	}
+#endif
+	pCoexDm->bAutoTdmaAdjust = FALSE;
+
+	if(!pCoexDm->bAutoTdmaAdjustLowRssi)
+	{
+		pCoexDm->bAutoTdmaAdjustLowRssi = TRUE;
+		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], first run TdmaDurationAdjustForWifiRssiLow()!!\n"));
+
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 82);
+		pCoexDm->psTdmaDuAdjType = 82;
+		//============
+		up = 0;
+		dn = 0;
+		m = 1;
+		n= 3;
+		result = 0;
+		WaitCount = 0;
+	}
+	else
+	{
+		//accquire the BT TRx retry count from BT_Info byte2
+		retryCount = pCoexSta->btRetryCnt;
+		btInfoExt = pCoexSta->btInfoExt;
+		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], retryCount = %d\n", retryCount));
+		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], up=%d, dn=%d, m=%d, n=%d, WaitCount=%d\n", 
+			up, dn, m, n, WaitCount));
+		result = 0;
+		WaitCount++; 
+		  
+		if(retryCount == 0)  // no retry in the last 2-second duration
+		{
+			up++;
+			dn--;
+
+			if (dn <= 0)
+				dn = 0;				 
+
+			if(up >= n)	// if 連續 n 個2秒 retry count為0, 則調寬WiFi duration
+			{
+				WaitCount = 0; 
+				n = 3;
+				up = 0;
+				dn = 0;
+				result = 1; 
+				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], Increase wifi duration!!\n"));
+			}
+		}
+		else if (retryCount <= 3)	// <=3 retry in the last 2-second duration
+		{
+			up--; 
+			dn++;
+
+			if (up <= 0)
+				up = 0;
+
+			if (dn == 2)	// if 連續 2 個2秒 retry count< 3, 則調窄WiFi duration
+			{
+				if (WaitCount <= 2)
+					m++; // 避免一直在兩個level中來回
+				else
+					m = 1;
+
+				if ( m >= 20) //m 最大值 = 20 ' 最大120秒 recheck是否調整 WiFi duration.
+					m = 20;
+
+				n = 3*m;
+				up = 0;
+				dn = 0;
+				WaitCount = 0;
+				result = -1; 
+				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], Decrease wifi duration for retryCounter<3!!\n"));
+			}
+		}
+		else  //retry count > 3, 只要1次 retry count > 3, 則調窄WiFi duration
+		{
+			if (WaitCount == 1)
+				m++; // 避免一直在兩個level中來回
+			else
+				m = 1;
+
+			if ( m >= 20) //m 最大值 = 20 ' 最大120秒 recheck是否調整 WiFi duration.
+				m = 20;
+
+			n = 3*m;
+			up = 0;
+			dn = 0;
+			WaitCount = 0; 
+			result = -1;
+			BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE_FW_DETAIL, ("[BTCoex], Decrease wifi duration for retryCounter>3!!\n"));
+		}
+
+		if(result == -1)
+		{
+			if( (BT_INFO_8812A_2ANT_A2DP_BASIC_RATE(btInfoExt)) &&
+				((pCoexDm->curPsTdma == 81) ||(pCoexDm->curPsTdma == 82)) )
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 83);
+				pCoexDm->psTdmaDuAdjType = 83;
+			}
+			else if(pCoexDm->curPsTdma == 81)
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 82);
+				pCoexDm->psTdmaDuAdjType = 82;
+			}
+			else if(pCoexDm->curPsTdma == 82)
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 83);
+				pCoexDm->psTdmaDuAdjType = 83;
+			}
+			else if(pCoexDm->curPsTdma == 83)
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 84);
+				pCoexDm->psTdmaDuAdjType = 84;
+			}
+		}
+		else if(result == 1)
+		{
+			if( (BT_INFO_8812A_2ANT_A2DP_BASIC_RATE(btInfoExt)) &&
+				((pCoexDm->curPsTdma == 81) ||(pCoexDm->curPsTdma == 82)) )
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 83);
+				pCoexDm->psTdmaDuAdjType = 83;
+			}
+			else if(pCoexDm->curPsTdma == 84)
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 83);
+				pCoexDm->psTdmaDuAdjType = 83;
+			}
+			else if(pCoexDm->curPsTdma == 83)
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 82);
+				pCoexDm->psTdmaDuAdjType = 82;
+			}
+			else if(pCoexDm->curPsTdma == 82)
+			{
+				halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 81);
+				pCoexDm->psTdmaDuAdjType = 81;
+			}
+		}
+
+		if( pCoexDm->curPsTdma != 81 &&
+			pCoexDm->curPsTdma != 82 &&
+			pCoexDm->curPsTdma != 83 &&
+			pCoexDm->curPsTdma != 84 )
+		{
+			// recover to previous adjust type
+			halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, pCoexDm->psTdmaDuAdjType);
+		}
+	}
+}
 
 VOID
 halbtc8812a2ant_ActionSco(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte	wifiRssiState,btRssiState;
-	u4Byte	wifiBw;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
+	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
-
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
-
-	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
-
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 4);
-
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	// power save state
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+
+	// coex table
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 4);
+
+	// pstdma
+	if(BTC_RSSI_LOW(btRssiState))
 		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 13);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
+	else
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
 		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
+	else
 		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);
-	}
+
+	// limited Rx
+	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+
+	// fw dac swing level
+	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
+
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
-
 	// sw mechanism
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,TRUE,0x6);			
@@ -2733,8 +3065,7 @@ halbtc8812a2ant_ActionSco(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,TRUE,0x6);
@@ -2752,45 +3083,44 @@ halbtc8812a2ant_ActionScoHid(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte	wifiRssiState, btRssiState=BTC_RSSI_STATE_STAY_LOW;
-	u4Byte	wifiBw;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
+	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
-
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
-
-	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
-
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 4);
-
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 14);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 10);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 10);
-	}
-	
-	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
+	// power save state
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
 
+	// coex table
+	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 4);
+
+	// pstdma
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 13);
+	else
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);		
+
+	// decrease BT power	
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+	
+	// limited Rx
+	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
+
+	// fw dac swing level
+	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
+
+
+	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
 	// sw mechanism
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x6);			
@@ -2803,8 +3133,7 @@ halbtc8812a2ant_ActionScoHid(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x6);
@@ -2822,44 +3151,52 @@ halbtc8812a2ant_ActionHid(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte	wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;	
-	u4Byte	wifiBw;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
+	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	// power save state
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
 
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);
+	else
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 13);
+	
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
+	
+
+	// fw dac swing level
 	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
-
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
-
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 13);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 9);
-	}
-
 	// sw mechanism
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -2872,8 +3209,7 @@ halbtc8812a2ant_ActionHid(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -2892,69 +3228,50 @@ halbtc8812a2ant_ActionA2dp(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
-	BOOLEAN 	bLongDist=FALSE;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	if( (btRssiState == BTC_RSSI_STATE_LOW||btRssiState == BTC_RSSI_STATE_STAY_LOW) &&
-		(wifiRssiState == BTC_RSSI_STATE_LOW||wifiRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], A2dp, wifi/bt rssi both LOW!!\n"));
-		bLongDist = TRUE;
-	}
-	if(bLongDist)
-	{
-		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x4);
-	}
+	// power save state
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
 	else
-	{
-		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
-	}
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
 
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 1);
+	else
+		halbtc8812a2ant_TdmaDurationAdjustForWifiRssiLow(pBtCoexist);
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
+	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+
+	// fw dac swing level
 	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 
-	if(bLongDist)
-		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
-	else
-		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
-
-	if(bLongDist)
-	{
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 17);
-		pCoexDm->bAutoTdmaAdjust = FALSE;
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-	}
-	else
-	{
-		if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-		{
-			halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, TRUE, 1);
-			halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		}
-		else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-				(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-		{
-			halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 1);
-			halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		}
-		else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-				(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-		{
-			halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 1);
-			halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		}
-	}
-
+	
 	// sw mechanism
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
  			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -2967,8 +3284,7 @@ halbtc8812a2ant_ActionA2dp(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -2986,43 +3302,47 @@ halbtc8812a2ant_ActionA2dpPanHs(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
+	// power save state
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+
+	// coex table	
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+
+	// pstdma	
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 2);		
+	else
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, TRUE, 2);
+	
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
 	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
+	// fw dac swing level
 	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
-
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, TRUE, 2);
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 2);
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 2);
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-	}
 
 	// sw mechanism
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
  			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,TRUE,0x6);
@@ -3035,8 +3355,7 @@ halbtc8812a2ant_ActionA2dpPanHs(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,TRUE,0x6);
@@ -3054,43 +3373,50 @@ halbtc8812a2ant_ActionPanEdr(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
+	// power save state
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+	else
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
+
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 1);
+	else
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 85);
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
 	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
+	// fw dac swing level
 	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
-
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
-
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 5);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 1);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 1);
-	}
+	
 	
 	// sw mechanism
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3103,8 +3429,7 @@ halbtc8812a2ant_ActionPanEdr(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3123,40 +3448,40 @@ halbtc8812a2ant_ActionPanHs(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	// power save state
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
 
-	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
-
+	// coex table
 	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
 
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-	}
+	// pstdma
 	halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, FALSE, 1);
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
+	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+
+	// fw dac swing level
+	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
+
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3169,8 +3494,7 @@ halbtc8812a2ant_ActionPanHs(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3189,44 +3513,59 @@ halbtc8812a2ant_ActionPanEdrA2dp(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
+	// power save state	
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+	else
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
+
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 3);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, TRUE, 3);
+	else
+	{
+		pCoexDm->bAutoTdmaAdjust = FALSE;
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 86);
+	}
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
 	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
+	// fw dac swing level
 	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 2);
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
-
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, TRUE, 3);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 3);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, FALSE, FALSE, 3);
-	}
-	
 	// sw mechanism	
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3239,8 +3578,7 @@ halbtc8812a2ant_ActionPanEdrA2dp(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,FALSE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3258,43 +3596,61 @@ halbtc8812a2ant_ActionPanEdrHid(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
-	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
-		
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
 
-	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
+	// power save state
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+	else
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
 
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
 
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 10);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 14);
+	else
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 85);
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
 		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-	        halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 14);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
 		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-	        halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 10);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
+	else
 		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-	        halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 10);
-	}
+
+	// limited Rx
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
+
+	// fw dac swing level
+	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 	
+
+	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
 	// sw mechanism
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3307,8 +3663,7 @@ halbtc8812a2ant_ActionPanEdrHid(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3327,44 +3682,64 @@ halbtc8812a2ant_ActionHidA2dpPanEdr(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	// power save state
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+	else
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
 
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 3);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, TRUE, 3);
+	else
+	{
+		pCoexDm->bAutoTdmaAdjust = FALSE;
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 86);
+	}
+	
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
+
+
+	// fw dac swing level
 	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
-
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
-
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, TRUE, 3);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 3);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 3);
-	}
-
 	// sw mechanism
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3377,8 +3752,87 @@ halbtc8812a2ant_ActionHidA2dpPanEdr(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
+		{
+			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
+			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
+		}
+		else
+		{
+			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
+			halbtc8812a2ant_SwMechanism2(pBtCoexist,FALSE,FALSE,FALSE,0x18);
+		}
+	}
+}
+
+VOID
+halbtc8812a2ant_ActionHidA2dpPanHs(
+	IN	PBTC_COEXIST		pBtCoexist
+	)
+{
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
+	u4Byte		wifiBw;
+
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
+	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
+
+	// power save state
+	halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 2);	
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, TRUE, 2);
+	else
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, TRUE, 2);
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
+
+	// fw dac swing level
+	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
+
+
+	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
+	// sw mechanism
+	if(BTC_WIFI_BW_HT40 == wifiBw)
+	{
+		if(BTC_RSSI_HIGH(wifiRssiState))
+		{
+			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
+			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
+		}
+		else
+		{
+			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
+			halbtc8812a2ant_SwMechanism2(pBtCoexist,FALSE,FALSE,FALSE,0x18);
+		}
+	}
+	else
+	{
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3396,42 +3850,64 @@ halbtc8812a2ant_ActionHidA2dp(
 	IN	PBTC_COEXIST		pBtCoexist
 	)
 {
-	u1Byte		wifiRssiState, btRssiState=BTC_RSSI_STATE_HIGH;
+	u1Byte		wifiRssiState=BTC_RSSI_STATE_HIGH, btRssiState=BTC_RSSI_STATE_HIGH;
 	u4Byte		wifiBw;
 
-	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 15, 0);
+	wifiRssiState = halbtc8812a2ant_WifiRssiState(pBtCoexist, 0, 2, 34, 0);
 	btRssiState = halbtc8812a2ant_BtRssiState(3, 34, 42);
 
-	halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	// power save state	
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_WIFI_NATIVE, TRUE, 0x0, 0x0);
+	else
+		halbtc8812a2ant_PowerSaveState(pBtCoexist, BTC_PS_LPS_ON, TRUE, 0x50, 0x4);
+
+	// coex table
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 5);
+	else
+		halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 0);
+
+	// pstdma
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 2);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, TRUE, 2);
+	else
+	{
+		pCoexDm->bAutoTdmaAdjust = FALSE;
+		halbtc8812a2ant_PsTdma(pBtCoexist, NORMAL_EXEC, TRUE, 82);
+	}
+
+	// decrease BT power
+	if(BTC_RSSI_LOW(btRssiState))
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
+	else if(BTC_RSSI_MEDIUM(btRssiState)) 
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
+	else
+		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
+
+	// limited Rx
+	if(BTC_RSSI_HIGH(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else if(BTC_RSSI_LOW(wifiRssiState) && BTC_RSSI_HIGH(btRssiState))
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, FALSE, 0x8);
+	else
+		halbtc8812a2ant_LimitedRx(pBtCoexist, NORMAL_EXEC, FALSE, TRUE, 0x8);
+
+	// fw dac swing level
+	halbtc8812a2ant_FwDacSwingLvl(pBtCoexist, NORMAL_EXEC, 6);
+
 
 	pBtCoexist->fBtcGet(pBtCoexist, BTC_GET_U4_WIFI_BW, &wifiBw);
-
-	halbtc8812a2ant_CoexTableWithType(pBtCoexist, NORMAL_EXEC, 3);
-	
-	if( (btRssiState == BTC_RSSI_STATE_LOW) ||
-		(btRssiState == BTC_RSSI_STATE_STAY_LOW) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 0);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, TRUE, 2);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_MEDIUM) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_MEDIUM) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 2);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 2);
-	}
-	else if( (btRssiState == BTC_RSSI_STATE_HIGH) ||
-			(btRssiState == BTC_RSSI_STATE_STAY_HIGH) )
-	{
-		halbtc8812a2ant_DecBtPwr(pBtCoexist, NORMAL_EXEC, 4);
-		halbtc8812a2ant_TdmaDurationAdjust(pBtCoexist, TRUE, FALSE, 2);
-	}	
-	
 	// sw mechanism
 	if(BTC_WIFI_BW_HT40 == wifiBw)
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,TRUE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3444,8 +3920,7 @@ halbtc8812a2ant_ActionHidA2dp(
 	}
 	else
 	{
-		if( (wifiRssiState == BTC_RSSI_STATE_HIGH) ||
-			(wifiRssiState == BTC_RSSI_STATE_STAY_HIGH) )
+		if(BTC_RSSI_HIGH(wifiRssiState))
 		{
 			halbtc8812a2ant_SwMechanism1(pBtCoexist,FALSE,TRUE,FALSE,FALSE);
 			halbtc8812a2ant_SwMechanism2(pBtCoexist,TRUE,FALSE,FALSE,0x18);
@@ -3515,6 +3990,7 @@ halbtc8812a2ant_RunCoexistMechanism(
 	{
 		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Action 2-Ant common.\n"));
 		pCoexDm->bAutoTdmaAdjust = FALSE;
+		pCoexDm->bAutoTdmaAdjustLowRssi = FALSE;
 	}
 	else
 	{
@@ -3523,6 +3999,7 @@ halbtc8812a2ant_RunCoexistMechanism(
 			BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], preAlgorithm=%d, curAlgorithm=%d\n", 
 				pCoexDm->preAlgorithm, pCoexDm->curAlgorithm));
 			pCoexDm->bAutoTdmaAdjust = FALSE;
+			pCoexDm->bAutoTdmaAdjustLowRssi = FALSE;
 		}
 		switch(pCoexDm->curAlgorithm)
 		{
@@ -3565,6 +4042,10 @@ halbtc8812a2ant_RunCoexistMechanism(
 			case BT_8812A_2ANT_COEX_ALGO_HID_A2DP_PANEDR:
 				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Action 2-Ant, algorithm = HID+A2DP+PAN.\n"));
 				halbtc8812a2ant_ActionHidA2dpPanEdr(pBtCoexist);
+				break;
+			case BT_8812A_2ANT_COEX_ALGO_HID_A2DP_PANHS:
+				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Action 2-Ant, algorithm = HID+A2DP+PAN(HS).\n"));
+				halbtc8812a2ant_ActionHidA2dpPanHs(pBtCoexist);
 				break;
 			case BT_8812A_2ANT_COEX_ALGO_HID_A2DP:
 				BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], Action 2-Ant, algorithm = HID+A2DP.\n"));
@@ -3646,7 +4127,8 @@ halbtc8812a2ant_InitHwConfig(
 //============================================================
 VOID
 EXhalbtc8812a2ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	)
 {
 	halbtc8812a2ant_InitHwConfig(pBtCoexist, TRUE);
@@ -3777,10 +4259,13 @@ EXhalbtc8812a2ant_DisplayCoexInfo(
 		}
 	}
 
-	CL_SPRINTF(cliBuf, BT_TMP_BUF_SIZE, "\r\n %-35s = %s/%s", "PS state, IPS/LPS", \
+	CL_SPRINTF(cliBuf, BT_TMP_BUF_SIZE, "\r\n %-35s = %s/%s, (0x%x/0x%x)", "PS state, IPS/LPS, (lps/rpwm)", \
 		((pCoexSta->bUnderIps? "IPS ON":"IPS OFF")),
-		((pCoexSta->bUnderLps? "LPS ON":"LPS OFF")));
+		((pCoexSta->bUnderLps? "LPS ON":"LPS OFF")), 
+		pBtCoexist->btInfo.lpsVal, 
+		pBtCoexist->btInfo.rpwmVal);
 	CL_PRINTF(cliBuf);
+
 	pBtCoexist->fBtcDispDbgMsg(pBtCoexist, BTC_DBG_DISP_FW_PWR_MODE_CMD);
 
 	// Sw mechanism	
@@ -3802,10 +4287,10 @@ EXhalbtc8812a2ant_DisplayCoexInfo(
 	CL_PRINTF(cliBuf);	
 	
 	psTdmaCase = pCoexDm->curPsTdma;
-	CL_SPRINTF(cliBuf, BT_TMP_BUF_SIZE, "\r\n %-35s = %02x %02x %02x %02x %02x case-%d (auto:%d)", "PS TDMA", \
+	CL_SPRINTF(cliBuf, BT_TMP_BUF_SIZE, "\r\n %-35s = %02x %02x %02x %02x %02x case-%d (auto:%d/%d)", "PS TDMA", \
 		pCoexDm->psTdmaPara[0], pCoexDm->psTdmaPara[1],
 		pCoexDm->psTdmaPara[2], pCoexDm->psTdmaPara[3],
-		pCoexDm->psTdmaPara[4], psTdmaCase, pCoexDm->bAutoTdmaAdjust);
+		pCoexDm->psTdmaPara[4], psTdmaCase, pCoexDm->bAutoTdmaAdjust, pCoexDm->bAutoTdmaAdjustLowRssi);
 	CL_PRINTF(cliBuf);
 
 	CL_SPRINTF(cliBuf, BT_TMP_BUF_SIZE, "\r\n %-35s = %d/ %d ", "DecBtPwr/ IgnWlanAct", \
@@ -4116,7 +4601,7 @@ EXhalbtc8812a2ant_BtInfoNotify(
 		pCoexSta->bC2hBtInquiryPage = TRUE;
 	else
 		pCoexSta->bC2hBtInquiryPage = FALSE;
-
+	
 	// set link exist status
 	if(!(btInfo&BT_INFO_8812A_2ANT_B_CONNECTION))
 	{
@@ -4175,7 +4660,7 @@ EXhalbtc8812a2ant_BtInfoNotify(
 		pCoexDm->btStatus = BT_8812A_2ANT_BT_STATUS_MAX;
 		BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE, ("[BTCoex], BtInfoNotify(), BT Non-Defined state!!!\n"));
 	}
-	
+
 	if( (BT_8812A_2ANT_BT_STATUS_ACL_BUSY == pCoexDm->btStatus) ||
 		(BT_8812A_2ANT_BT_STATUS_SCO_BUSY == pCoexDm->btStatus) ||
 		(BT_8812A_2ANT_BT_STATUS_ACL_SCO_BUSY == pCoexDm->btStatus) )
@@ -4203,11 +4688,18 @@ EXhalbtc8812a2ant_HaltNotify(
 	IN	PBTC_COEXIST			pBtCoexist
 	)
 {
+	u1Byte u1Tmp=0;
+	
 	BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY, ("[BTCoex], Halt notify\n"));
 
 	halbtc8812a2ant_SetAntPath(pBtCoexist, BTC_ANT_WIFI_AT_CPL_AUX, FALSE, TRUE);
 	halbtc8812a2ant_IgnoreWlanAct(pBtCoexist, FORCE_EXEC, TRUE);
 	EXhalbtc8812a2ant_MediaStatusNotify(pBtCoexist, BTC_MEDIA_DISCONNECT);
+
+	// 0x522=0xff, pause tx
+	pBtCoexist->fBtcWrite1Byte(pBtCoexist, 0x522, 0xff);
+	// 0x40[7:6]=2'b01, modify BT mode.
+	pBtCoexist->fBtcWrite1ByteBitMask(pBtCoexist, 0x40, 0xc0, 0x2);
 }
 
 VOID
@@ -4243,7 +4735,8 @@ EXhalbtc8812a2ant_Periodical(
 	halbtc8812a2ant_MonitorBtEnableDisable(pBtCoexist);
 #else
 	if( halbtc8812a2ant_IsWifiStatusChanged(pBtCoexist) ||
-		pCoexDm->bAutoTdmaAdjust)
+		pCoexDm->bAutoTdmaAdjust ||
+		pCoexDm->bAutoTdmaAdjustLowRssi)
 	{
 		halbtc8812a2ant_RunCoexistMechanism(pBtCoexist);
 	}

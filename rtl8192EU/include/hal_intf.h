@@ -117,6 +117,9 @@ typedef enum _HW_VARIABLES{
 	HW_VAR_WAKEUP_REASON,
 	HW_VAR_RPWM_TOG,
 #endif
+#ifdef CONFIG_AP_WOWLAN
+	HW_VAR_AP_WOWLAN,
+#endif
 	HW_VAR_SYS_CLKR,
 	HW_VAR_NAV_UPPER,
 	HW_VAR_C2H_HANDLE,
@@ -140,6 +143,8 @@ typedef enum _HW_VARIABLES{
 	HW_VAR_SOUNDING_FW_NDPA,
 	HW_VAR_SOUNDING_CLK,
 	HW_VAR_DL_RSVD_PAGE,
+	HW_VAR_MACID_SLEEP,
+	HW_VAR_MACID_WAKEUP,
 }HW_VARIABLES;
 
 typedef enum _HAL_DEF_VARIABLE{
@@ -166,12 +171,15 @@ typedef enum _HAL_DEF_VARIABLE{
 	HW_DEF_FA_CNT_DUMP,
 	HW_DEF_ODM_DBG_FLAG,
 	HW_DEF_ODM_DBG_LEVEL,
+	HAL_DEF_TX_PAGE_SIZE,
 	HAL_DEF_TX_PAGE_BOUNDARY,
 	HAL_DEF_TX_PAGE_BOUNDARY_WOWLAN,
 	HAL_DEF_ANT_DETECT,//to do for 8723a
 	HAL_DEF_PCI_SUUPORT_L1_BACKDOOR, // Determine if the L1 Backdoor setting is turned on.
 	HAL_DEF_PCI_AMD_L1_SUPPORT,
 	HAL_DEF_PCI_ASPM_OSC, // Support for ASPM OSC, added by Roger, 2013.03.27.
+	HAL_DEF_MACID_SLEEP, // Support for MACID sleep
+	HAL_DEF_DBG_RX_INFO_DUMP,
 }HAL_DEF_VARIABLE;
 
 typedef enum _HAL_ODM_VARIABLE{
@@ -222,11 +230,7 @@ struct hal_ops {
 	void	(*disable_interrupt)(_adapter *padapter);
 	u8		(*check_ips_status)(_adapter *padapter);
 	s32		(*interrupt_handler)(_adapter *padapter);
-
-#ifdef CONFIG_WOWLAN
 	void    (*clear_interrupt)(_adapter *padapter);
-#endif
-
 	void	(*set_bwmode_handler)(_adapter *padapter, CHANNEL_WIDTH Bandwidth, u8 Offset);
 	void	(*set_channel_handler)(_adapter *padapter, u8 channel);
 	void	(*set_chnl_bw_handler)(_adapter *padapter, u8 channel, CHANNEL_WIDTH Bandwidth, u8 Offset40, u8 Offset80);
@@ -266,6 +270,9 @@ struct hal_ops {
 	u8	(*interface_ps_func)(_adapter *padapter,HAL_INTF_PS_FUNC efunc_id, u8* val);
 
 	s32	(*hal_xmit)(_adapter *padapter, struct xmit_frame *pxmitframe);
+	/*
+	 * mgnt_xmit should be implemented to run in interrupt context
+	 */
 	s32 (*mgnt_xmit)(_adapter *padapter, struct xmit_frame *pmgntframe);
 	s32	(*hal_xmitframe_enqueue)(_adapter *padapter, struct xmit_frame *pxmitframe);
 
@@ -457,7 +464,6 @@ typedef struct eeprom_priv EEPROM_EFUSE_PRIV, *PEEPROM_EFUSE_PRIV;
 #define GET_EEPROM_EFUSE_PRIV(adapter) (&adapter->eeprompriv)
 #define is_boot_from_eeprom(adapter) (adapter->eeprompriv.EepromOrEfuse)
 
-#ifdef CONFIG_WOWLAN
 typedef enum _wowlan_subcode{
 	WOWLAN_PATTERN_MATCH	= 1,
 	WOWLAN_MAGIC_PACKET		= 2,
@@ -469,7 +475,9 @@ typedef enum _wowlan_subcode{
 	WOWLAN_STATUS			= 8,
 	WOWLAN_DEBUG_RELOAD_FW	= 9,
 	WOWLAN_DEBUG_1			=10,
-	WOWLAN_DEBUG_2			=11
+	WOWLAN_DEBUG_2			=11,
+	WOWLAN_AP_ENABLE		=12,
+	WOWLAN_AP_DISABLE		=13
 }wowlan_subcode;
 
 struct wowlan_ioctl_param{
@@ -490,7 +498,7 @@ struct wowlan_ioctl_param{
 #define Rx_UnicastPkt			0x22
 #define Rx_PatternPkt			0x23
 #define	RX_PNOWakeUp			0x55
-#endif // CONFIG_WOWLAN
+#define	AP_WakeUp			0x66
 
 void rtw_hal_def_value_init(_adapter *padapter);
 
@@ -613,6 +621,9 @@ s32 rtw_hal_c2h_handler(_adapter *adapter, u8 *c2h_evt);
 c2h_id_filter rtw_hal_c2h_id_filter_ccx(_adapter *adapter);
 
 s32 rtw_hal_is_disable_sw_channel_plan(PADAPTER padapter);
+
+s32 rtw_hal_macid_sleep(PADAPTER padapter, u32 macid);
+s32 rtw_hal_macid_wakeup(PADAPTER padapter, u32 macid);
 
 #ifdef CONFIG_BT_COEXIST
 s32 rtw_hal_fill_h2c_cmd(PADAPTER, u8 ElementID, u32 CmdLen, u8 *pCmdBuffer);

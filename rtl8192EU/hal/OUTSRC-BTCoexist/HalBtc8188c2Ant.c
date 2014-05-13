@@ -1725,7 +1725,8 @@ halbtc8188c2ant_ActionPanA2dp(
 //============================================================
 VOID
 EXhalbtc8188c2ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	)
 {
 	u1Byte	u1Tmp=0;

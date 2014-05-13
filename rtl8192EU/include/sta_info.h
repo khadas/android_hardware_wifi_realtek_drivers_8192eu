@@ -118,7 +118,7 @@ struct sta_info {
 #ifdef CONFIG_GTK_OL
 	u8 kek[RTW_KEK_LEN];
 	u8 kck[RTW_KCK_LEN];
-	u8 replay_ctr[NL80211_REPLAY_CTR_LEN];
+	u8 replay_ctr[RTW_REPLAY_CTR_LEN];
 #endif //CONFIG_GTK_OL
 #ifdef CONFIG_IEEE80211W
 	union pn48		dot11wtxpn;			// PN48 used for Unicast mgmt xmit.
@@ -140,6 +140,9 @@ struct sta_info {
 	u8	wireless_mode;	// NETWORK_TYPE
 	u8	bw_mode;
 
+	u8	ldpc;
+	u8	stbc;
+
 	struct stainfo_stats sta_stats;
 
 #ifdef CONFIG_TDLS
@@ -159,12 +162,11 @@ struct sta_info {
 	_timer	option_timer;
 	_timer	base_ch_timer;
 	_timer	off_ch_timer;
-
 	_timer handshake_timer;
-	_timer alive_timer1;
-	_timer alive_timer2;
 	u8 timer_flag;
 	u8 alive_count;
+	_timer	pti_timer;
+	u8	TDLS_RSNIE[20];	//Save peer's RSNIE, use for sending TDLS_SETUP_RSP
 #endif //CONFIG_TDLS
 
 	//for A-MPDU TX, ADDBA timeout check	

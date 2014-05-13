@@ -379,7 +379,9 @@ struct rtw_mem_stat {
 };
 
 struct rtw_mem_stat rtw_mem_type_stat[mstat_tf_idx(MSTAT_TYPE_MAX)];
+#ifdef RTW_MEM_FUNC_STAT
 struct rtw_mem_stat rtw_mem_func_stat[mstat_ff_idx(MSTAT_FUNC_MAX)];
+#endif
 
 char *MSTAT_TYPE_str[] = {
 	"VIR",
@@ -388,6 +390,7 @@ char *MSTAT_TYPE_str[] = {
 	"USB",
 };
 
+#ifdef RTW_MEM_FUNC_STAT
 char *MSTAT_FUNC_str[] = {
 	"UNSP",
 	"IO",
@@ -396,12 +399,15 @@ char *MSTAT_FUNC_str[] = {
 	"TX",
 	"RX",
 };
+#endif
 
 void rtw_mstat_dump(void *sel)
 {
 	int i;
 	int value_t[4][mstat_tf_idx(MSTAT_TYPE_MAX)];
+#ifdef RTW_MEM_FUNC_STAT
 	int value_f[4][mstat_ff_idx(MSTAT_FUNC_MAX)];
+#endif
 	
 	int vir_alloc, vir_peak, vir_alloc_err, phy_alloc, phy_peak, phy_alloc_err;
 	int tx_alloc, tx_peak, tx_alloc_err, rx_alloc, rx_peak, rx_alloc_err;
@@ -413,12 +419,14 @@ void rtw_mstat_dump(void *sel)
 		value_t[3][i] = ATOMIC_READ(&(rtw_mem_type_stat[i].alloc_err_cnt));
 	}
 
+	#ifdef RTW_MEM_FUNC_STAT
 	for(i=0;i<mstat_ff_idx(MSTAT_FUNC_MAX);i++) {
 		value_f[0][i] = ATOMIC_READ(&(rtw_mem_func_stat[i].alloc));
 		value_f[1][i] = ATOMIC_READ(&(rtw_mem_func_stat[i].peak));
 		value_f[2][i] = ATOMIC_READ(&(rtw_mem_func_stat[i].alloc_cnt));
 		value_f[3][i] = ATOMIC_READ(&(rtw_mem_func_stat[i].alloc_err_cnt));
 	}
+	#endif
 
 	DBG_871X_SEL_NL(sel, "===================== MSTAT =====================\n");
 	DBG_871X_SEL_NL(sel, "%4s %10s %10s %10s %10s\n", "TAG", "alloc", "peak", "aloc_cnt", "err_cnt");
@@ -426,10 +434,12 @@ void rtw_mstat_dump(void *sel)
 	for(i=0;i<mstat_tf_idx(MSTAT_TYPE_MAX);i++) {
 		DBG_871X_SEL_NL(sel, "%4s %10d %10d %10d %10d\n", MSTAT_TYPE_str[i], value_t[0][i], value_t[1][i], value_t[2][i], value_t[3][i]);
 	}
+	#ifdef RTW_MEM_FUNC_STAT
 	DBG_871X_SEL_NL(sel, "-------------------------------------------------\n");
 	for(i=0;i<mstat_ff_idx(MSTAT_FUNC_MAX);i++) {
 		DBG_871X_SEL_NL(sel, "%4s %10d %10d %10d %10d\n", MSTAT_FUNC_str[i], value_f[0][i], value_f[1][i], value_f[2][i], value_f[3][i]);
 	}
+	#endif
 }
 
 void rtw_mstat_update(const enum mstat_f flags, const MSTAT_STATUS status, u32 sz)
@@ -446,12 +456,14 @@ void rtw_mstat_update(const enum mstat_f flags, const MSTAT_STATUS status, u32 s
 			ATOMIC_SET(&(rtw_mem_type_stat[i].alloc_cnt), 0);
 			ATOMIC_SET(&(rtw_mem_type_stat[i].alloc_err_cnt), 0);
 		}
+		#ifdef RTW_MEM_FUNC_STAT
 		for(i=0;i<mstat_ff_idx(MSTAT_FUNC_MAX);i++) {
 			ATOMIC_SET(&(rtw_mem_func_stat[i].alloc), 0);
 			ATOMIC_SET(&(rtw_mem_func_stat[i].peak), 0);
 			ATOMIC_SET(&(rtw_mem_func_stat[i].alloc_cnt), 0);
 			ATOMIC_SET(&(rtw_mem_func_stat[i].alloc_err_cnt), 0);
 		}
+		#endif
 	}
 
 	switch(status) {
@@ -462,25 +474,29 @@ void rtw_mstat_update(const enum mstat_f flags, const MSTAT_STATUS status, u32 s
 			if (peak<alloc)
 				ATOMIC_SET(&(rtw_mem_type_stat[mstat_tf_idx(flags)].peak), alloc);
 
+			#ifdef RTW_MEM_FUNC_STAT
 			ATOMIC_INC(&(rtw_mem_func_stat[mstat_ff_idx(flags)].alloc_cnt));
 			alloc = ATOMIC_ADD_RETURN(&(rtw_mem_func_stat[mstat_ff_idx(flags)].alloc), sz);
 			peak=ATOMIC_READ(&(rtw_mem_func_stat[mstat_ff_idx(flags)].peak));
 			if (peak<alloc)
 				ATOMIC_SET(&(rtw_mem_func_stat[mstat_ff_idx(flags)].peak), alloc);
+			#endif
 			break;
 
 		case MSTAT_ALLOC_FAIL:
 			ATOMIC_INC(&(rtw_mem_type_stat[mstat_tf_idx(flags)].alloc_err_cnt));
-
+			#ifdef RTW_MEM_FUNC_STAT
 			ATOMIC_INC(&(rtw_mem_func_stat[mstat_ff_idx(flags)].alloc_err_cnt));
+			#endif
 			break;
 
 		case MSTAT_FREE:
 			ATOMIC_DEC(&(rtw_mem_type_stat[mstat_tf_idx(flags)].alloc_cnt));
 			ATOMIC_SUB(&(rtw_mem_type_stat[mstat_tf_idx(flags)].alloc), sz);
-
+			#ifdef RTW_MEM_FUNC_STAT
 			ATOMIC_DEC(&(rtw_mem_func_stat[mstat_ff_idx(flags)].alloc_cnt));
 			ATOMIC_SUB(&(rtw_mem_func_stat[mstat_ff_idx(flags)].alloc), sz);
+			#endif
 			break;
 	};
 
@@ -490,11 +506,41 @@ void rtw_mstat_update(const enum mstat_f flags, const MSTAT_STATUS status, u32 s
 	//}
 }
 
+#ifndef SIZE_MAX
+	#define SIZE_MAX (~(size_t)0)
+#endif
+
+struct mstat_sniff_rule {
+	enum mstat_f flags;
+	size_t lb;
+	size_t hb;
+};
+
+struct mstat_sniff_rule mstat_sniff_rules[] = {
+	{MSTAT_TYPE_PHY, 4097, SIZE_MAX},
+};
+
+int mstat_sniff_rule_num = sizeof(mstat_sniff_rules)/sizeof(struct mstat_sniff_rule);
+
+bool match_mstat_sniff_rules(const enum mstat_f flags, const size_t size)
+{
+	int i;
+	for (i = 0; i<mstat_sniff_rule_num; i++) {
+		if (mstat_sniff_rules[i].flags == flags
+				&& mstat_sniff_rules[i].lb <= size
+				&& mstat_sniff_rules[i].hb >= size)
+			return _TRUE;
+	}
+
+	return _FALSE;
+}
 
 inline u8* dbg_rtw_vmalloc(u32 sz, const enum mstat_f flags, const char *func, const int line)
 {
 	u8  *p;
-	//DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func,  line, __FUNCTION__, (sz));
+
+	if (match_mstat_sniff_rules(flags, sz))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
 	
 	p=_rtw_vmalloc((sz));
 
@@ -510,8 +556,10 @@ inline u8* dbg_rtw_vmalloc(u32 sz, const enum mstat_f flags, const char *func, c
 inline u8* dbg_rtw_zvmalloc(u32 sz, const enum mstat_f flags, const char *func, const int line)
 {
 	u8 *p;
-	//DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz)); 
-	
+
+	if (match_mstat_sniff_rules(flags, sz))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
+
 	p=_rtw_zvmalloc((sz)); 
 
 	rtw_mstat_update(
@@ -525,8 +573,10 @@ inline u8* dbg_rtw_zvmalloc(u32 sz, const enum mstat_f flags, const char *func, 
 
 inline void dbg_rtw_vmfree(u8 *pbuf, u32 sz, const enum mstat_f flags, const char *func, const int line)
 {
-	//DBG_871X("DBG_MEM_ALLOC %s:%d %s(%p,%d)\n",  func, line, __FUNCTION__, (pbuf), (sz));
-	
+
+	if (match_mstat_sniff_rules(flags, sz))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
+
 	_rtw_vmfree((pbuf), (sz)); 
 
 	rtw_mstat_update(
@@ -540,14 +590,11 @@ inline u8* dbg_rtw_malloc(u32 sz, const enum mstat_f flags, const char *func, co
 {
 	u8 *p;
 
-	//if(sz>=153 && sz<=306) 
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
-
-	//if((sz)>4096) 
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz)); 
+	if (match_mstat_sniff_rules(flags, sz))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
 
 	p=_rtw_malloc((sz));
-	
+
 	rtw_mstat_update(
 		flags
 		, p ? MSTAT_ALLOC_SUCCESS : MSTAT_ALLOC_FAIL
@@ -561,11 +608,8 @@ inline u8* dbg_rtw_zmalloc(u32 sz, const enum mstat_f flags, const char *func, c
 {
 	u8 *p;
 
-	//if(sz>=153 && sz<=306) 
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
-
-	//if((sz)>4096)
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
+	if (match_mstat_sniff_rules(flags, sz))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
 
 	p = _rtw_zmalloc((sz));
 
@@ -580,12 +624,9 @@ inline u8* dbg_rtw_zmalloc(u32 sz, const enum mstat_f flags, const char *func, c
 
 inline void dbg_rtw_mfree(u8 *pbuf, u32 sz, const enum mstat_f flags, const char *func, const int line)
 {
-	//if(sz>=153 && sz<=306) 
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
+	if (match_mstat_sniff_rules(flags, sz))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, (sz));
 
-	//if((sz)>4096)
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s(%p,%d)\n", func, line, __FUNCTION__, (pbuf), (sz));
-	
 	_rtw_mfree((pbuf), (sz));
 
 	rtw_mstat_update(
@@ -605,7 +646,7 @@ inline struct sk_buff * dbg_rtw_skb_alloc(unsigned int size, const enum mstat_f 
 	if(skb)
 		truesize = skb->truesize;
 
-	if(!skb || truesize < size /*|| size > 4096*/)
+	if(!skb || truesize < size || match_mstat_sniff_rules(flags, truesize))
 		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d), skb:%p, truesize=%u\n", func, line, __FUNCTION__, size, skb, truesize);
 
 	rtw_mstat_update(
@@ -621,11 +662,11 @@ inline void dbg_rtw_skb_free(struct sk_buff *skb, const enum mstat_f flags, cons
 {
 	unsigned int truesize = skb->truesize;
 
-	//if(truesize > 4096)
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s, truesize=%u\n", func, line, __FUNCTION__, truesize);
+	if(match_mstat_sniff_rules(flags, truesize))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s, truesize=%u\n", func, line, __FUNCTION__, truesize);
 
 	_rtw_skb_free(skb);
-	
+
 	rtw_mstat_update(
 		flags
 		, MSTAT_FREE
@@ -643,7 +684,7 @@ inline struct sk_buff *dbg_rtw_skb_copy(const struct sk_buff *skb, const enum ms
 	if(skb_cp)
 		cp_truesize = skb_cp->truesize;
 
-	if(!skb_cp || cp_truesize != truesize /*||cp_truesize > 4096*/)
+	if(!skb_cp || cp_truesize < truesize || match_mstat_sniff_rules(flags, cp_truesize))
 		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%u), skb_cp:%p, cp_truesize=%u\n", func, line, __FUNCTION__, truesize, skb_cp, cp_truesize);
 
 	rtw_mstat_update(
@@ -665,7 +706,7 @@ inline struct sk_buff *dbg_rtw_skb_clone(struct sk_buff *skb, const enum mstat_f
 	if(skb_cl)
 		cl_truesize = skb_cl->truesize;
 
-	if(!skb_cl || cl_truesize != truesize /*|| cl_truesize > 4096*/)
+	if(!skb_cl || cl_truesize < truesize || match_mstat_sniff_rules(flags, cl_truesize))
 		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%u), skb_cl:%p, cl_truesize=%u\n", func, line, __FUNCTION__, truesize, skb_cl, cl_truesize);
 
 	rtw_mstat_update(
@@ -682,8 +723,8 @@ inline int dbg_rtw_netif_rx(_nic_hdl ndev, struct sk_buff *skb, const enum mstat
 	int ret;
 	unsigned int truesize = skb->truesize;
 
-	//if(truesize > 4096)
-	//	DBG_871X("DBG_MEM_ALLOC %s:%d %s, truesize=%u\n", func, line, __FUNCTION__, truesize);
+	if(match_mstat_sniff_rules(flags, truesize))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s, truesize=%u\n", func, line, __FUNCTION__, truesize);
 
 	ret = _rtw_netif_rx(ndev, skb);
 	
@@ -708,8 +749,10 @@ inline void dbg_rtw_skb_queue_purge(struct sk_buff_head *list, enum mstat_f flag
 inline void *dbg_rtw_usb_buffer_alloc(struct usb_device *dev, size_t size, dma_addr_t *dma, const enum mstat_f flags, const char *func, int line)
 {
 	void *p;
-	//DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, size);
-	
+
+	if(match_mstat_sniff_rules(flags, size))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, size);
+
 	p = _rtw_usb_buffer_alloc(dev, size, dma);
 	
 	rtw_mstat_update(
@@ -723,7 +766,9 @@ inline void *dbg_rtw_usb_buffer_alloc(struct usb_device *dev, size_t size, dma_a
 
 inline void dbg_rtw_usb_buffer_free(struct usb_device *dev, size_t size, void *addr, dma_addr_t dma, const enum mstat_f flags, const char *func, int line)
 {
-	//DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, size);
+
+	if(match_mstat_sniff_rules(flags, size))
+		DBG_871X("DBG_MEM_ALLOC %s:%d %s(%d)\n", func, line, __FUNCTION__, size);
 
 	_rtw_usb_buffer_free(dev, size, addr, dma);
 
@@ -1517,7 +1562,6 @@ void rtw_yield_os()
 #define RTW_SUSPEND_TRAFFIC_LOCK_NAME "rtw_wifi_traffic"
 #define RTW_SUSPEND_RESUME_LOCK_NAME "rtw_wifi_resume"
 #define RTW_RESUME_SCAN_LOCK_NAME "rtw_wifi_scan"
-#define RTW_ALLOC_XMITBUF_LOCK_NAME "rtw_wifi_alloc_xmitbuf"
 #ifdef CONFIG_WAKELOCK
 static struct wake_lock rtw_suspend_lock;
 static struct wake_lock rtw_suspend_ext_lock;
@@ -1525,7 +1569,6 @@ static struct wake_lock rtw_suspend_rx_lock;
 static struct wake_lock rtw_suspend_traffic_lock;
 static struct wake_lock rtw_suspend_resume_lock;
 static struct wake_lock rtw_resume_scan_lock;
-static struct wake_lock rtw_alloc_xmitbuf_lock;
 #elif defined(CONFIG_ANDROID_POWER)
 static android_suspend_lock_t rtw_suspend_lock ={
 	.name = RTW_SUSPEND_LOCK_NAME
@@ -1545,9 +1588,6 @@ static android_suspend_lock_t rtw_suspend_resume_lock ={
 static android_suspend_lock_t rtw_resume_scan_lock ={
 	.name = RTW_RESUME_SCAN_LOCK_NAME
 };
-static android_suspend_lock_t rtw_alloc_xmitbuf_lock ={
-	.name = RTW_ALLOC_XMITBUF_LOCK_NAME
-};
 #endif
 
 inline void rtw_suspend_lock_init()
@@ -1559,7 +1599,6 @@ inline void rtw_suspend_lock_init()
 	wake_lock_init(&rtw_suspend_traffic_lock, WAKE_LOCK_SUSPEND, RTW_SUSPEND_TRAFFIC_LOCK_NAME);
 	wake_lock_init(&rtw_suspend_resume_lock, WAKE_LOCK_SUSPEND, RTW_SUSPEND_RESUME_LOCK_NAME);
 	wake_lock_init(&rtw_resume_scan_lock, WAKE_LOCK_SUSPEND, RTW_RESUME_SCAN_LOCK_NAME);
-	wake_lock_init(&rtw_alloc_xmitbuf_lock, WAKE_LOCK_SUSPEND, RTW_ALLOC_XMITBUF_LOCK_NAME);
 	#elif defined(CONFIG_ANDROID_POWER)
 	android_init_suspend_lock(&rtw_suspend_lock);
 	android_init_suspend_lock(&rtw_suspend_ext_lock);
@@ -1567,7 +1606,6 @@ inline void rtw_suspend_lock_init()
 	android_init_suspend_lock(&rtw_suspend_traffic_lock);
 	android_init_suspend_lock(&rtw_suspend_resume_lock);
 	android_init_suspend_lock(&rtw_resume_scan_lock);
-	android_init_suspend_lock(&rtw_alloc_xmitbuf_lock);
 	#endif
 }
 
@@ -1580,7 +1618,6 @@ inline void rtw_suspend_lock_uninit()
 	wake_lock_destroy(&rtw_suspend_traffic_lock);
 	wake_lock_destroy(&rtw_suspend_resume_lock);
 	wake_lock_destroy(&rtw_resume_scan_lock);
-	wake_lock_destroy(&rtw_alloc_xmitbuf_lock);
 	#elif defined(CONFIG_ANDROID_POWER)
 	android_uninit_suspend_lock(&rtw_suspend_lock);
 	android_uninit_suspend_lock(&rtw_suspend_ext_lock);
@@ -1588,7 +1625,6 @@ inline void rtw_suspend_lock_uninit()
 	android_uninit_suspend_lock(&rtw_suspend_traffic_lock);
 	android_uninit_suspend_lock(&rtw_suspend_resume_lock);
 	android_uninit_suspend_lock(&rtw_resume_scan_lock);
-	android_uninit_suspend_lock(&rtw_alloc_xmitbuf_lock);
 	#endif
 }
 
@@ -1692,17 +1728,6 @@ inline void rtw_lock_resume_scan_timeout(u32 timeout_ms)
 	android_lock_suspend_auto_expire(&rtw_resume_scan_lock, rtw_ms_to_systime(timeout_ms));
 	#endif
 	//DBG_871X("resume scan lock:%d\n", timeout_ms);
-}
-
-inline void rtw_lock_alloc_xmitbuf_timeout(u32 timeout_ms)
-{
-#ifdef CONFIG_ALLOC_XMITBUF_WAKELOCK
-	#ifdef CONFIG_WAKELOCK
-	wake_lock_timeout(&rtw_alloc_xmitbuf_lock, rtw_ms_to_systime(timeout_ms));
-	#elif defined(CONFIG_ANDROID_POWER)
-	android_lock_suspend_auto_expire(&rtw_alloc_xmitbuf_lock, rtw_ms_to_systime(timeout_ms));
-	#endif
-#endif /* CONFIG_ALLOC_XMITBUF_WAKELOCK */
 }
 
 inline void ATOMIC_SET(ATOMIC_T *v, int i)
@@ -2122,13 +2147,14 @@ RETURN:
 int rtw_change_ifname(_adapter *padapter, const char *ifname)
 {
 	struct net_device *pnetdev;
-	struct net_device *cur_pnetdev = padapter->pnetdev;
+	struct net_device *cur_pnetdev;
 	struct rereg_nd_name_data *rereg_priv;
 	int ret;
 
 	if(!padapter)
 		goto error;
 
+	cur_pnetdev = padapter->pnetdev;
 	rereg_priv = &padapter->rereg_nd_name_priv;
 	
 	//free the old_pnetdev
@@ -2276,6 +2302,21 @@ u64 rtw_division64(u64 x, u64 y)
 	return (x / y);
 #elif defined(PLATFORM_FREEBSD)
 	return (x / y);
+#endif
+}
+
+inline u32 rtw_random32(void)
+{
+#ifdef PLATFORM_LINUX
+	#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0))
+	return prandom_u32();
+	#else
+	return random32();
+	#endif
+#elif defined(PLATFORM_WINDOWS)
+	#error "to be implemented\n"
+#elif defined(PLATFORM_FREEBSD)
+	#error "to be implemented\n"
 #endif
 }
 

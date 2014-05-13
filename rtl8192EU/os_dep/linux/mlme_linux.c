@@ -95,7 +95,7 @@ void _dynamic_check_timer_handlder (void *FunctionContext)
 #if (MP_DRIVER == 1)
 	if (adapter->registrypriv.mp_mode == 1 && adapter->mppriv.mp_dm ==0) //for MP ODM dynamic Tx power tracking
 	{
-		DBG_871X("_dynamic_check_timer_handlder mp_dm =0 return \n");
+		//DBG_871X("_dynamic_check_timer_handlder mp_dm =0 return \n");
 		_set_timer(&adapter->mlmepriv.dynamic_chk_timer, 2000);
 		return;
 	}
@@ -177,7 +177,7 @@ extern void indicate_wx_scan_complete_event(_adapter *padapter);
 void rtw_os_indicate_scan_done( _adapter *padapter, bool aborted)
 {
 #ifdef CONFIG_IOCTL_CFG80211
-	rtw_cfg80211_indicate_scan_done(wdev_to_priv(padapter->rtw_wdev), aborted);
+	rtw_cfg80211_indicate_scan_done(padapter, aborted);
 #endif
 	indicate_wx_scan_complete_event(padapter);
 }

@@ -54,34 +54,36 @@
 //#define	SET_CHANNEL_CMD	0xF3000000
 //#define	UPDATE_RA_CMD	0xFD0000A2
 
-#define	DYNAMIC_FUNC_DISABLE			(0x0)
+#define DYNAMIC_FUNC_DISABLE		(0x0)
 
 // ====== ODM_ABILITY_E ========
 // BB ODM section BIT 0-15
-#define	DYNAMIC_BB_DIG				BIT(0)
-#define	DYNAMIC_BB_RA_MASK			BIT(1)
-#define	DYNAMIC_BB_DYNAMIC_TXPWR	BIT(2) 
-#define	DYNAMIC_BB_BB_FA_CNT			BIT(3) 
-
-#define 	DYNAMIC_BB_RSSI_MONITOR		BIT(4)
-#define 	DYNAMIC_BB_CCK_PD			BIT(5)
-#define 	DYNAMIC_BB_ANT_DIV			BIT(6)
-#define 	DYNAMIC_BB_PWR_SAVE			BIT(7)
-#define 	DYNAMIC_BB_PWR_TRAIN			BIT(8)
-#define 	DYNAMIC_BB_RATE_ADAPTIVE		BIT(9)
-#define 	DYNAMIC_BB_PATH_DIV			BIT(10)
-#define 	DYNAMIC_BB_PSD				BIT(11)
+#define DYNAMIC_BB_DIG				BIT0 //ODM_BB_DIG
+#define DYNAMIC_BB_RA_MASK			BIT1 //ODM_BB_RA_MASK
+#define DYNAMIC_BB_DYNAMIC_TXPWR	BIT2 //ODM_BB_DYNAMIC_TXPWR
+#define DYNAMIC_BB_BB_FA_CNT		BIT3 //ODM_BB_FA_CNT
+#define DYNAMIC_BB_RSSI_MONITOR		BIT4 //ODM_BB_RSSI_MONITOR
+#define DYNAMIC_BB_CCK_PD			BIT5 //ODM_BB_CCK_PD
+#define DYNAMIC_BB_ANT_DIV			BIT6 //ODM_BB_ANT_DIV
+#define DYNAMIC_BB_PWR_SAVE			BIT7 //ODM_BB_PWR_SAVE
+#define DYNAMIC_BB_PWR_TRAIN		BIT8 //ODM_BB_PWR_TRAIN
+#define DYNAMIC_BB_RATE_ADAPTIVE	BIT9 //ODM_BB_RATE_ADAPTIVE
+#define DYNAMIC_BB_PATH_DIV			BIT10//ODM_BB_PATH_DIV
+#define DYNAMIC_BB_PSD				BIT11//ODM_BB_PSD
+#define DYNAMIC_BB_RXHP				BIT12//ODM_BB_RXHP
+#define DYNAMIC_BB_ADAPTIVITY		BIT13//ODM_BB_ADAPTIVITY
+#define DYNAMIC_BB_DYNAMIC_ATC		BIT14//ODM_BB_DYNAMIC_ATC
 
 // MAC DM section BIT 16-23
-#define 	DYNAMIC_MAC_EDCA_TURBO		BIT(16)
-#define 	DYNAMIC_MAC_EARLY_MODE		BIT(17)
+#define DYNAMIC_MAC_EDCA_TURBO		BIT16//ODM_MAC_EDCA_TURBO
+#define DYNAMIC_MAC_EARLY_MODE		BIT17//ODM_MAC_EARLY_MODE
 
 // RF ODM section BIT 24-31
-#define 	DYNAMIC_RF_TX_PWR_TRACK		BIT(24)
-#define 	DYNAMIC_RF_RX_GAIN_TRACK		BIT(25)	
-#define 	DYNAMIC_RF_CALIBRATION		BIT(26)
+#define DYNAMIC_RF_TX_PWR_TRACK		BIT24//ODM_RF_TX_PWR_TRACK
+#define DYNAMIC_RF_RX_GAIN_TRACK	BIT25//ODM_RF_RX_GAIN_TRACK
+#define DYNAMIC_RF_CALIBRATION		BIT26//ODM_RF_CALIBRATION
 
-#define 	DYNAMIC_ALL_FUNC_ENABLE		0xFFFFFFF
+#define DYNAMIC_ALL_FUNC_ENABLE		0xFFFFFFF
 
 #define _HW_STATE_NOLINK_		0x00
 #define _HW_STATE_ADHOC_		0x01
@@ -372,13 +374,11 @@ struct	ss_res
 // 8: Set channel back to base channel
 // 9: Set channel back to off channel
 // 10: Restore RCR DATA BIT
-// 11: Check alive
-// 12: Check alive
-// 13: Free TDLS sta
+// 11: Free TDLS sta
 enum TDLS_option
 {
-	TDLS_WRCR			= 	1,
-	TDLS_SD_PTI		= 	2,
+	TDLS_ESTABLISHED	= 	1,
+	TDLS_SD_PTI		=	2,
 	TDLS_CS_OFF		= 	3,
 	TDLS_INIT_CH_SEN	= 	4,
 	TDLS_DONE_CH_SEN	=	5,
@@ -387,9 +387,7 @@ enum TDLS_option
 	TDLS_P_OFF_CH		=	8,
 	TDLS_P_BASE_CH	= 	9,
 	TDLS_RS_RCR		=	10,
-	TDLS_CKALV_PH1	=	11,
-	TDLS_CKALV_PH2	=	12,
-	TDLS_FREE_STA		=	13,
+	TDLS_TEAR_STA		=	11,
 	maxTDLS,
 };
 
@@ -427,8 +425,8 @@ struct FW_Sta_Info
 #define RTW_STAY_AP_CH_MILLISECOND		2	// this value is a multiplier,for example, when this value is 3, 
 							// it would stay AP's op ch for  3 * SURVEY_TO millisecond.
 #elif defined(CONFIG_STA_MODE_SCAN_UNDER_AP_MODE)
-#define RTW_SCAN_NUM_OF_CH			8
-#define RTW_STAY_AP_CH_MILLISECOND		3	// this value is a multiplier,for example, when this value is 3, 
+#define RTW_SCAN_NUM_OF_CH			3
+#define RTW_STAY_AP_CH_MILLISECOND		4	// this value is a multiplier,for example, when this value is 3, 
 							// it would stay AP's op ch for  3 * SURVEY_TO millisecond.
 #endif 
 
@@ -649,8 +647,18 @@ unsigned int decide_wait_for_beacon_timeout(unsigned int bcn_interval);
 
 void read_cam(_adapter *padapter ,u8 entry, u8 *get_key);
 
-void write_cam(_adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key);
-void clear_cam_entry(_adapter *padapter, u8 entry);
+/* modify HW only */
+void _write_cam(_adapter *padapter, u8 entry, u16 ctrl, u8 *mac, u8 *key);
+void _clear_cam_entry(_adapter *padapter, u8 entry);
+void write_cam_from_cache(_adapter *adapter, u8 id);
+
+/* modify both HW and cache */
+void write_cam(_adapter *padapter, u8 id, u16 ctrl, u8 *mac, u8 *key);
+void clear_cam_entry(_adapter *padapter, u8 id);
+
+/* modify cache only */
+void write_cam_cache(_adapter *adapter, u8 id, u16 ctrl, u8 *mac, u8 *key);
+void clear_cam_cache(_adapter *adapter, u8 id);
 
 void invalidate_cam_all(_adapter *padapter);
 void CAM_empty_entry(PADAPTER Adapter, u8 ucIndex);
@@ -687,6 +695,7 @@ void HTOnAssocRsp(_adapter *padapter);
 
 void ERP_IE_handler(_adapter *padapter, PNDIS_802_11_VARIABLE_IEs pIE);
 void VCS_update(_adapter *padapter, struct sta_info *psta);
+void	update_ldpc_stbc_cap(struct sta_info *psta);
 
 void update_beacon_info(_adapter *padapter, u8 *pframe, uint len, struct sta_info *psta);
 int rtw_check_bcn_info(ADAPTER *Adapter, u8 *pframe, u32 packet_len);
@@ -719,6 +728,7 @@ unsigned int should_forbid_n_rate(_adapter * padapter);
 extern uint rtw_get_camid(uint macid);
 extern void rtw_alloc_macid(_adapter *padapter, struct sta_info *psta);
 extern void rtw_release_macid(_adapter *padapter, struct sta_info *psta);
+extern u8 rtw_search_max_mac_id(_adapter *padapter);
 
 void report_join_res(_adapter *padapter, int res);
 void report_survey_event(_adapter *padapter, union recv_frame *precv_frame);
@@ -726,8 +736,10 @@ void report_surveydone_event(_adapter *padapter);
 void report_del_sta_event(_adapter *padapter, unsigned char* MacAddr, unsigned short reason);
 void report_add_sta_event(_adapter *padapter, unsigned char* MacAddr, int cam_idx);
 bool rtw_port_switch_chk(_adapter *adapter);
+void report_wmm_edca_update(_adapter *padapter);
 
 void beacon_timing_control(_adapter *padapter);
+u8 chk_bmc_sleepq_cmd(_adapter* padapter);
 extern u8 set_tx_beacon_cmd(_adapter*padapter);
 unsigned int setup_beacon_frame(_adapter *padapter, unsigned char *beacon_frame);
 void update_mgnt_tx_rate(_adapter *padapter, u8 rate);
@@ -752,8 +764,9 @@ void issue_assocreq(_adapter *padapter);
 void issue_asocrsp(_adapter *padapter, unsigned short status, struct sta_info *pstat, int pkt_type);
 void issue_auth(_adapter *padapter, struct sta_info *psta, unsigned short status);
 void issue_probereq(_adapter *padapter, NDIS_802_11_SSID *pssid, u8 *da);
-s32 issue_probereq_ex(_adapter *padapter, NDIS_802_11_SSID *pssid, u8* da, int try_cnt, int wait_ms);
+s32 issue_probereq_ex(_adapter *padapter, NDIS_802_11_SSID *pssid, u8* da, u8 ch, bool append_wps, int try_cnt, int wait_ms);
 int issue_nulldata(_adapter *padapter, unsigned char *da, unsigned int power_mode, int try_cnt, int wait_ms);
+s32 issue_nulldata_in_interrupt(PADAPTER padapter, u8 *da);
 int issue_qos_nulldata(_adapter *padapter, unsigned char *da, u16 tid, int try_cnt, int wait_ms);
 int issue_deauth(_adapter *padapter, unsigned char *da, unsigned short reason);
 int issue_deauth_ex(_adapter *padapter, u8 *da, unsigned short reason, int try_cnt, int wait_ms);
@@ -793,6 +806,7 @@ unsigned int OnAction_ht(_adapter *padapter, union recv_frame *precv_frame);
 unsigned int OnAction_sa_query(_adapter *padapter, union recv_frame *precv_frame);
 #endif //CONFIG_IEEE80211W
 unsigned int OnAction_wmm(_adapter *padapter, union recv_frame *precv_frame);
+unsigned int OnAction_vht(_adapter *padapter, union recv_frame *precv_frame);
 unsigned int OnAction_p2p(_adapter *padapter, union recv_frame *precv_frame);
 
 
@@ -893,6 +907,7 @@ u8 add_ba_hdl(_adapter *padapter, unsigned char *pbuf);
 
 u8 mlme_evt_hdl(_adapter *padapter, unsigned char *pbuf);
 u8 h2c_msg_hdl(_adapter *padapter, unsigned char *pbuf);
+u8 chk_bmc_sleepq_hdl(_adapter *padapter, unsigned char *pbuf);
 u8 tx_beacon_hdl(_adapter *padapter, unsigned char *pbuf);
 u8 set_ch_hdl(_adapter *padapter, u8 *pbuf);
 u8 set_chplan_hdl(_adapter *padapter, unsigned char *pbuf);
@@ -974,6 +989,7 @@ struct cmd_hdl wlancmds[] =
 
 	GEN_MLME_EXT_HANDLER(sizeof(struct SetChannelSwitch_param), set_csa_hdl) /*61*/
 	GEN_MLME_EXT_HANDLER(sizeof(struct TDLSoption_param), tdls_hdl) /*62*/
+	GEN_MLME_EXT_HANDLER(0, chk_bmc_sleepq_hdl) /*63*/
 };
 
 #endif
@@ -1034,6 +1050,7 @@ enum rtw_c2h_event
 	GEN_EVT_CODE(_C2HBCN),
 	GEN_EVT_CODE(_ReportPwrState),		//filen: only for PCIE, USB	
 	GEN_EVT_CODE(_CloseRF),				//filen: only for PCIE, work around ASPM
+	GEN_EVT_CODE(_WMM),					/*25*/
  	MAX_C2HEVT
 };
 
@@ -1065,8 +1082,11 @@ static struct fwevent wlanevents[] =
 	{0, rtw_fwdbg_event_callback},
 	{0, NULL},	 /*20*/
 	{0, NULL},
-	{0, NULL},	
+	{0, NULL},
 	{0, &rtw_cpwm_event_callback},
+	{0, NULL},
+	{0, &rtw_wmm_event_callback},
+
 };
 
 #endif//_RTL8192C_CMD_C_

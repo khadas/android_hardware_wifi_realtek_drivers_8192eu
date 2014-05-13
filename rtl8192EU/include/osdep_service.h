@@ -99,7 +99,7 @@
 extern int RTW_STATUS_CODE(int error_code);
 
 #ifndef RTK_DMP_PLATFORM
-//#define CONFIG_USE_VMALLOC
+#define CONFIG_USE_VMALLOC
 #endif
 
 /* flags used for rtw_mstat_update() */
@@ -493,7 +493,10 @@ extern void rtw_lock_traffic_suspend_timeout(u32 timeout_ms);
 extern void rtw_lock_resume_scan_timeout(u32 timeout_ms);
 extern void rtw_resume_lock_suspend(void);
 extern void rtw_resume_unlock_suspend(void);
-extern void rtw_lock_alloc_xmitbuf_timeout(u32 timeout_ms);
+#ifdef CONFIG_AP_WOWLAN
+extern void rtw_softap_lock_suspend(void);
+extern void rtw_softap_unlock_suspend(void);
+#endif
 
 extern void ATOMIC_SET(ATOMIC_T *v, int i);
 extern int ATOMIC_READ(ATOMIC_T *v);
@@ -519,7 +522,7 @@ extern void rtw_free_netdev(struct net_device * netdev);
 
 extern u64 rtw_modular64(u64 x, u64 y);
 extern u64 rtw_division64(u64 x, u64 y);
-
+extern u32 rtw_random32(void);
 
 /* Macros for handling unaligned memory accesses */
 

@@ -1000,6 +1000,7 @@ ODM_DMInit(
 	}
 
 	ODM_DynamicATCSwitch_init(pDM_Odm);
+	ODM_ClearTxPowerTrackingState(pDM_Odm);
 
 }
 
@@ -1805,6 +1806,7 @@ odm_BasicDbgMessage
 		FalseAlmCnt->Cnt_Cck_fail, FalseAlmCnt->Cnt_Ofdm_fail, FalseAlmCnt->Cnt_all));
 	ODM_RT_TRACE(pDM_Odm,ODM_COMP_COMMON, ODM_DBG_LOUD, ("RxRate = 0x%x, RSSI_A = %d, RSSI_B = %d\n", 
 		pDM_Odm->RxRate, pDM_Odm->RSSI_A, pDM_Odm->RSSI_B));
+	//ODM_RT_TRACE(pDM_Odm,ODM_COMP_COMMON, ODM_DBG_LOUD, ("RSSI_C = %d, RSSI_D = %d\n", pDM_Odm->RSSI_C, pDM_Odm->RSSI_D));
 
 }
 
@@ -5704,7 +5706,7 @@ odm_RSSIMonitorCheckCE(
 	int	i;
 	int	tmpEntryMaxPWDB=0, tmpEntryMinPWDB=0xff;
 	u8 	sta_cnt=0;
-	u8	UL_DL_STATE = 0, STBC_TX = 0;
+	u32	UL_DL_STATE = 0, STBC_TX = 0, TxBF_EN = 0;
 	u32	PWDB_rssi[NUM_STA]={0};//[0~15]:MACID, [16~31]:PWDB_rssi
 	BOOLEAN			FirstConnect = FALSE;
 	pRA_T			pRA_Table = &pDM_Odm->DM_RA_Table;
@@ -5755,22 +5757,37 @@ odm_RSSIMonitorCheckCE(
 
 					if(psta->rssi_stat.UndecoratedSmoothedPWDB != (-1)) {
 
-						#ifdef CONFIG_80211N_HT
+#ifdef CONFIG_80211N_HT
 						if(pDM_Odm->SupportICType == ODM_RTL8192E || pDM_Odm->SupportICType == ODM_RTL8812)
 						{
-							#ifdef CONFIG_80211AC_VHT
-							if(IsSupportedVHT(psta->wireless_mode))
-								STBC_TX = TEST_FLAG(psta->vhtpriv.stbc_cap, STBC_VHT_ENABLE_TX);
-							else	
-							#endif
-								STBC_TX = TEST_FLAG(psta->htpriv.stbc_cap, STBC_HT_ENABLE_TX);
+#ifdef CONFIG_BEAMFORMING
+							BEAMFORMING_CAP Beamform_cap = beamforming_get_entry_beam_cap_by_mac_id(&Adapter->mlmepriv, psta->mac_id);
+
+							if(Beamform_cap & (BEAMFORMER_CAP_HT_EXPLICIT |BEAMFORMER_CAP_VHT_SU))
+								TxBF_EN = 1;
+							else
+								TxBF_EN = 0;
+
+							if (TxBF_EN) {
+								STBC_TX = 0;
+							}
+							else
+#endif
+							{
+#ifdef CONFIG_80211AC_VHT
+								if(IsSupportedVHT(psta->wireless_mode))
+									STBC_TX = TEST_FLAG(psta->vhtpriv.stbc_cap, STBC_VHT_ENABLE_TX);
+								else	
+#endif
+									STBC_TX = TEST_FLAG(psta->htpriv.stbc_cap, STBC_HT_ENABLE_TX);
+							}
 						}
-						#endif
+#endif
 
 						if(pDM_Odm->SupportICType == ODM_RTL8192D)
 							PWDB_rssi[sta_cnt++] = (psta->mac_id | (psta->rssi_stat.UndecoratedSmoothedPWDB<<16) | ((Adapter->stapriv.asoc_sta_count+1) << 8));
 						else if ((pDM_Odm->SupportICType == ODM_RTL8192E)||(pDM_Odm->SupportICType == ODM_RTL8812)||(pDM_Odm->SupportICType == ODM_RTL8821))
-							PWDB_rssi[sta_cnt++] = (((u8)(psta->mac_id&0xFF)) | ((psta->rssi_stat.UndecoratedSmoothedPWDB&0x7F)<<16) | (STBC_TX << 25) | (FirstConnect << 29));
+							PWDB_rssi[sta_cnt++] = (((u8)(psta->mac_id&0xFF)) | ((psta->rssi_stat.UndecoratedSmoothedPWDB&0x7F)<<16) |(STBC_TX << 25) | (FirstConnect << 29) | (TxBF_EN << 30));
 						else
 							PWDB_rssi[sta_cnt++] = (psta->mac_id | (psta->rssi_stat.UndecoratedSmoothedPWDB<<16) );
 					}
@@ -6167,7 +6184,7 @@ odm_TXPowerTrackingThermalMeterInit(
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
 
 	#if	MP_DRIVER != 1					//for mp driver, turn off txpwrtracking as default
-	pHalData->TxPowerTrackControl = TRUE;		
+	pDM_Odm->RFCalibrateInfo.TxPowerTrackControl = pHalData->TxPowerTrackControl = TRUE;		
 	#endif
 #elif (DM_ODM_SUPPORT_TYPE == ODM_CE)
 	PADAPTER			Adapter = pDM_Odm->Adapter;
@@ -6182,6 +6199,8 @@ odm_TXPowerTrackingThermalMeterInit(
 		//#if	(MP_DRIVER != 1)		//for mp driver, turn off txpwrtracking as default
 		if ( *(pDM_Odm->mp_mode) != 1)
 			pDM_Odm->RFCalibrateInfo.TxPowerTrackControl = _TRUE;
+		else
+			pDM_Odm->RFCalibrateInfo.TxPowerTrackControl = _FALSE;
 		//#endif//#if	(MP_DRIVER != 1)
 		MSG_8192C("pDM_Odm TxPowerTrackControl = %d\n", pDM_Odm->RFCalibrateInfo.TxPowerTrackControl);
 	}
@@ -6196,6 +6215,8 @@ odm_TXPowerTrackingThermalMeterInit(
 
 		if (*(pDM_Odm->mp_mode) != 1)
 			pdmpriv->TxPowerTrackControl = _TRUE;
+		else
+			pdmpriv->TxPowerTrackControl = _FALSE;
 		//#endif//#if	(MP_DRIVER != 1)
 
 		//MSG_8192C("pdmpriv->TxPowerTrackControl = %d\n", pdmpriv->TxPowerTrackControl);
@@ -6212,7 +6233,7 @@ odm_TXPowerTrackingThermalMeterInit(
 	#endif
 #endif
 
-	pDM_Odm->RFCalibrateInfo.TxPowerTrackControl = TRUE;
+	//pDM_Odm->RFCalibrateInfo.TxPowerTrackControl = TRUE;
 	pDM_Odm->RFCalibrateInfo.ThermalValue = pHalData->EEPROMThermalMeter;
 	pDM_Odm->RFCalibrateInfo.ThermalValue_IQK = pHalData->EEPROMThermalMeter;
 	pDM_Odm->RFCalibrateInfo.ThermalValue_LCK = pHalData->EEPROMThermalMeter;	
@@ -13450,6 +13471,7 @@ ODM_SingleDualAntennaDefaultSetting(
 		pDM_SWAT_Table->ANTB_ON=TRUE;
 		//RT_TRACE(COMP_ANTENNA, DBG_LOUD, ("Dual antenna\n"));
 	}
+#ifdef CONFIG_BT_COEXIST
 	else if(btAntNum == 1)
 	{// Set antenna A as default
 		pDM_SWAT_Table->ANTA_ON=TRUE;
@@ -13460,6 +13482,7 @@ ODM_SingleDualAntennaDefaultSetting(
 	{
 		//RT_ASSERT(FALSE, ("Incorrect antenna number!!\n"));
 	}
+#endif
 }
 
 

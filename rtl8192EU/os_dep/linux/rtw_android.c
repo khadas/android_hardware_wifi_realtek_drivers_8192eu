@@ -79,12 +79,15 @@ const char *android_wifi_cmd_str[ANDROID_WIFI_CMD_MAX] = {
 	"WFD-SET-TCPPORT",
 	"WFD-SET-MAXTPUT",
 	"WFD-SET-DEVTYPE",
+	"SET_DTIM",
 	"HOSTAPD_SET_MACADDR_ACL",
 	"HOSTAPD_ACL_ADD_STA",
 	"HOSTAPD_ACL_REMOVE_STA",
 #ifdef CONFIG_GTK_OL
 	"GTK_REKEY_OFFLOAD",
 #endif //CONFIG_GTK_OL
+/*	Private command for	P2P disable*/
+	"P2P_DISABLE"
 };
 
 #ifdef CONFIG_PNO_SUPPORT
@@ -156,6 +159,17 @@ static int g_wifi_on = _TRUE;
 unsigned int oob_irq;
 
 #ifdef CONFIG_PNO_SUPPORT
+/* 
+ * rtw_android_pno_setup
+ * Description: 
+ * This is used for private command.
+ * 
+ * Parameter:
+ * net: net_device
+ * command: parameters from private command
+ * total_len: the length of the command.
+ *
+ * */
 static int rtw_android_pno_setup(struct net_device *net, char *command, int total_len) {
 	pno_ssid_t pno_ssids_local[MAX_PNO_LIST_COUNT];
 	int res = -1;
@@ -245,10 +259,56 @@ exit_proc:
 	return res;
 }
 
-static int rtw_android_pno_enable(struct net_device *net, int pno_enable) {
+/* 
+ * rtw_android_cfg80211_pno_setup
+ * Description: 
+ * This is used for cfg80211 sched_scan.
+ * 
+ * Parameter:
+ * net: net_device
+ * request: cfg80211_request
+ * */
+
+int rtw_android_cfg80211_pno_setup(struct net_device *net,
+		struct cfg80211_ssid *ssids, int n_ssids, int interval) {
+	int res = -1;
+	int nssid = 0;
+	int pno_time = 0;
+	int pno_repeat = 0;
+	int pno_freq_expo_max = 0;
+	int index = 0;
+	pno_ssid_t pno_ssids_local[MAX_PNO_LIST_COUNT];
+
+	if (n_ssids > MAX_PNO_LIST_COUNT || n_ssids < 0) {
+		DBG_871X("%s: nssids(%d) is invalid.\n", __func__, n_ssids);
+		return -EINVAL;
+	}
+
+	memset(pno_ssids_local, 0, sizeof(pno_ssids_local));
+
+	nssid = n_ssids;
+
+	for (index = 0 ; index < nssid ; index++) {
+		pno_ssids_local[index].SSID_len = ssids[index].ssid_len;
+		memcpy(pno_ssids_local[index].SSID, ssids[index].ssid,
+				ssids[index].ssid_len);
+	}
+
+	pno_time = (interval / 1000);
+
+	DBG_871X("%s: nssids: %d, pno_time=%d\n", __func__, nssid, pno_time);
+
+	res = rtw_dev_pno_set(net, pno_ssids_local, nssid, pno_time,
+			pno_repeat, pno_freq_expo_max);
+
+exit_proc:
+	return res;
+}
+
+int rtw_android_pno_enable(struct net_device *net, int pno_enable) {
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(net);
 	struct pwrctrl_priv *pwrctl = adapter_to_pwrctl(padapter);
-	
+
 	if (pwrctl) {
 		pwrctl->wowlan_pno_enable = pno_enable;
 		DBG_871X("%s: wowlan_pno_enable: %d\n", __func__, pwrctl->wowlan_pno_enable);
@@ -349,7 +409,7 @@ int rtw_android_set_block(struct net_device *net, char *command, int total_len)
 	char *block_value = command + strlen(android_wifi_cmd_str[ANDROID_WIFI_CMD_BLOCK]) + 1;
 
 	#ifdef CONFIG_IOCTL_CFG80211
-	wdev_to_priv(adapter->rtw_wdev)->block = (*block_value=='0')?_FALSE:_TRUE;
+	adapter_wdev_data(adapter)->block = (*block_value=='0')?_FALSE:_TRUE;
 	#endif
 	
 	return 0;
@@ -430,11 +490,11 @@ int rtw_gtk_offload(struct net_device *net, u8 *cmd_ptr)
 		for(i=0;i<RTW_KEK_LEN; i++)
 			printk(" %02x ", psta->kck[i]);
 		*/
-		_rtw_memcpy(psta->replay_ctr, cmd_ptr, NL80211_REPLAY_CTR_LEN);
+		_rtw_memcpy(psta->replay_ctr, cmd_ptr, RTW_REPLAY_CTR_LEN);
 		psecuritypriv->binstallKCK_KEK = _TRUE;
 		
 		//printk("\nREPLAY_CTR: ");
-		//for(i=0;i<NL80211_REPLAY_CTR_LEN; i++)
+		//for(i=0;i<RTW_REPLAY_CTR_LEN; i++)
 			//printk(" %02x ", psta->replay_ctr[i]);
 	}
 
@@ -467,7 +527,10 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		ret = -EFAULT;
 		goto exit;
 	}
-	
+	if ( padapter->registrypriv.mp_mode == 1) {
+		ret = -EFAULT;
+		goto exit;
+	}
 	//DBG_871X("%s priv_cmd.buf=%p priv_cmd.total_len=%d  priv_cmd.used_len=%d\n",__func__,priv_cmd.buf,priv_cmd.total_len,priv_cmd.used_len);
 	command = rtw_zmalloc(priv_cmd.total_len);
 	if (!command)
@@ -521,7 +584,7 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		//rtw_set_scan_mode((_adapter *)rtw_netdev_priv(net), SCAN_ACTIVE);
 #ifdef CONFIG_PLATFORM_MSTAR
 #ifdef CONFIG_IOCTL_CFG80211
-		(wdev_to_priv(net->ieee80211_ptr))->bandroid_scan = _TRUE;	
+		adapter_wdev_data((_adapter *)rtw_netdev_priv(net))->bandroid_scan = _TRUE;
 #endif //CONFIG_IOCTL_CFG80211
 #endif //CONFIG_PLATFORM_MSTAR
 		break;
@@ -696,6 +759,22 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		break;
 	}
 #endif
+	case ANDROID_WIFI_CMD_CHANGE_DTIM:
+		{
+#ifdef CONFIG_LPS
+			u8 dtim;
+			u8 *ptr = priv_cmd.buf;
+			
+			ptr += 9;//string command length of  "SET_DTIM";
+
+			dtim = rtw_atoi(ptr);
+
+			DBG_871X("DTIM=%d\n", dtim);
+
+			rtw_lps_change_dtim_cmd(padapter, dtim);			
+#endif			
+		}		
+		break;
 	case ANDROID_WIFI_CMD_HOSTAPD_SET_MACADDR_ACL:
 	{
 		padapter->stapriv.acl_list.mode = ( u8 ) get_int_from_command(command);
@@ -721,6 +800,16 @@ int rtw_android_priv_cmd(struct net_device *net, struct ifreq *ifr, int cmd)
 		rtw_gtk_offload(net, priv_cmd.buf);
 		break;
 #endif //CONFIG_GTK_OL		
+	case ANDROID_WIFI_CMD_P2P_DISABLE:
+	{
+		struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;	
+		struct wifidirect_info 	*pwdinfo= &(padapter->wdinfo);
+		u8 channel, ch_offset;
+		u16 bwmode;
+
+		rtw_p2p_enable(padapter, P2P_ROLE_DISABLE);
+		break;
+	}
 	default:
 		DBG_871X("Unknown PRIVATE command %s - ignored\n", command);
 		snprintf(command, 3, "OK");

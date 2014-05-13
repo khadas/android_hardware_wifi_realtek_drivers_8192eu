@@ -34,6 +34,8 @@
 #endif //CONFIG_IEEE80211W
 #define is_wep_enc(alg) (((alg) == _WEP40_) || ((alg) == _WEP104_))
 
+const char *security_type_str(u8 value);
+
 #define _WPA_IE_ID_	0xdd
 #define _WPA2_IE_ID_	0x30
 
@@ -43,6 +45,7 @@
 
 #define RTW_KEK_LEN 16
 #define RTW_KCK_LEN 16
+#define RTW_REPLAY_CTR_LEN 8
 
 typedef enum {
 	ENCRYP_PROTOCOL_OPENSYS,   //open system

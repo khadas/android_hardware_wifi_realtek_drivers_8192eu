@@ -85,6 +85,7 @@ dm_CheckStatistics(
 #endif
 }
 
+#ifdef CONFIG_SUPPORT_HW_WPS_PBC
 static void dm_CheckPbcGPIO(_adapter *padapter)
 {
 	u8	tmp1byte;
@@ -94,37 +95,33 @@ static void dm_CheckPbcGPIO(_adapter *padapter)
 		return;
 
 #ifdef CONFIG_USB_HCI
-	tmp1byte = rtw_read8(padapter, GPIO_IO_SEL_8811A);
-	tmp1byte |= (BIT4);
-	rtw_write8(padapter, GPIO_IO_SEL_8811A, tmp1byte);	//enable GPIO[2] as output mode
+	tmp1byte = rtw_read8(padapter, GPIO_IO_SEL);
+	tmp1byte |= (HAL_8192EU_HW_GPIO_WPS_BIT);
+	rtw_write8(padapter, GPIO_IO_SEL, tmp1byte);	//enable GPIO[7] as output mode
 
-	tmp1byte &= ~(BIT4);
-	rtw_write8(padapter,  GPIO_IN_8811A, tmp1byte);		//reset the floating voltage level
+	tmp1byte &= ~(HAL_8192EU_HW_GPIO_WPS_BIT);
+	rtw_write8(padapter,GPIO_IN, tmp1byte);		//reset the floating voltage level
 
-	tmp1byte = rtw_read8(padapter, GPIO_IO_SEL_8811A);
-	tmp1byte &= ~(BIT4);
-	rtw_write8(padapter, GPIO_IO_SEL_8811A, tmp1byte);	//enable GPIO[2] as input mode
+	tmp1byte =  rtw_read8(padapter,  GPIO_IO_SEL);
+	tmp1byte &= ~(HAL_8192EU_HW_GPIO_WPS_BIT);
+	rtw_write8(padapter, GPIO_IO_SEL, tmp1byte);	//enable GPIO[7] as input mode
 
-	tmp1byte =rtw_read8(padapter, GPIO_IN_8811A);
+	tmp1byte = rtw_read8(padapter, GPIO_IN);
+	//DBG_871X("CheckPbcGPIO - %x\n", tmp1byte);
 
 	if (tmp1byte == 0xff)
+	{		
 		return ;
-
-	if (tmp1byte&HAL_8192C_HW_GPIO_WPS_BIT)
-	{
-		bPbcPressed = _TRUE;
 	}
-#else
-	tmp1byte = rtw_read8(padapter, GPIO_IN_8811A);
-	//RT_TRACE(COMP_IO, DBG_TRACE, ("dm_CheckPbcGPIO - %x\n", tmp1byte));
 
-	if (tmp1byte == 0xff || padapter->init_adpt_in_progress)
-		return ;
-
-	if((tmp1byte&BIT4)==0)
+	if (tmp1byte&HAL_8192EU_HW_GPIO_WPS_BIT)
 	{
+		// Here we only set bPbcPressed to TRUE
+		// After trigger PBC, the variable will be set to FALSE
 		bPbcPressed = _TRUE;
-	}
+		//DBG_871X("CheckPbcGPIO - PBC is pressed\n");
+			
+	}   
 #endif
 
 	if( _TRUE == bPbcPressed)
@@ -132,10 +129,10 @@ static void dm_CheckPbcGPIO(_adapter *padapter)
 		// Here we only set bPbcPressed to true
 		// After trigger PBC, the variable will be set to false
 		DBG_8192C("CheckPbcGPIO - PBC is pressed\n");
-
 		rtw_request_wps_pbc_event(padapter);
 	}
 }
+#endif //#ifdef CONFIG_SUPPORT_HW_WPS_PBC
 
 #ifdef CONFIG_PCI_HCI
 //
@@ -315,7 +312,7 @@ static void Init_ODM_ComInfo_8192e(PADAPTER	Adapter)
 	//
 	// Init Value
 	//
-	_rtw_memset(pDM_Odm,0,sizeof(pDM_Odm));
+	_rtw_memset(pDM_Odm,0,sizeof(*pDM_Odm));
 	
 	pDM_Odm->Adapter = Adapter;	
 	
@@ -557,7 +554,7 @@ rtl8192e_HalDmWatchDog(
 		// Calculate Tx/Rx statistics.
 		//
 		dm_CheckStatistics(Adapter);
-	
+		rtw_hal_check_rxfifo_full(Adapter);
 		//
 		// Dynamically switch RTS/CTS protection.
 		//
@@ -584,40 +581,33 @@ rtl8192e_HalDmWatchDog(
 		pHalData->odmpriv.SupportAbility = 0;
 		#endif
 
-		if(rtw_linked_check(Adapter))
+		if(rtw_linked_check(Adapter)){			
 			bLinked = _TRUE;
-
+			if (check_fwstate(&Adapter->mlmepriv, WIFI_STATION_STATE))
+				bsta_state = _TRUE;
+		}
+			
 #ifdef CONFIG_CONCURRENT_MODE
-		if(pbuddy_adapter && rtw_linked_check(pbuddy_adapter))
+		if(pbuddy_adapter && rtw_linked_check(pbuddy_adapter)){
 			bLinked = _TRUE;
+			if(pbuddy_adapter && check_fwstate(&pbuddy_adapter->mlmepriv, WIFI_STATION_STATE))
+				bsta_state = _TRUE;
+		}
 #endif //CONFIG_CONCURRENT_MODE
 
 		ODM_CmnInfoUpdate(&pHalData->odmpriv ,ODM_CMNINFO_LINK, bLinked);
-
-		if (check_fwstate(&Adapter->mlmepriv, WIFI_STATION_STATE))
-			bsta_state = _TRUE;
-#ifdef CONFIG_CONCURRENT_MODE
-		if(pbuddy_adapter && check_fwstate(&pbuddy_adapter->mlmepriv, WIFI_STATION_STATE))
-			bsta_state = _TRUE;
-#endif //CONFIG_CONCURRENT_MODE	
 		ODM_CmnInfoUpdate(&pHalData->odmpriv ,ODM_CMNINFO_STATION_STATE, bsta_state);
-
 
 		ODM_DMWatchdog(&pHalData->odmpriv);
 			
 	}
 
 skip_dm:
-
-	// Check GPIO to determine current RF on/off and Pbc status.
-	// Check Hardware Radio ON/OFF or not
-#ifdef CONFIG_PCI_HCI
-	if(pHalData->bGpioHwWpsPbc)
-#endif
-	{
-		//temp removed
-		//dm_CheckPbcGPIO(Adapter);				
-	}
+	
+#ifdef CONFIG_SUPPORT_HW_WPS_PBC
+	// Check GPIO to determine current Pbc status.
+	dm_CheckPbcGPIO(Adapter);
+#endif	
 	return;
 }
 

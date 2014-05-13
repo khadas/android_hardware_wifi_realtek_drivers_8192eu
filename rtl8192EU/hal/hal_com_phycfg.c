@@ -869,16 +869,19 @@ PHY_StoreTxPowerByRateNew(
 	if ( Band != BAND_ON_2_4G && Band != BAND_ON_5G )
 	{
 		DBG_871X("Invalid Band %d\n", Band );
+		return;
 	}
 
 	if ( RfPath > ODM_RF_PATH_D )
 	{
 		DBG_871X("Invalid RfPath %d\n", RfPath );
+		return;
 	}
 
 	if ( TxNum > ODM_RF_PATH_D )
 	{
 		DBG_871X("Invalid TxNum %d\n", TxNum );
+		return;
 	}
 
 	for ( i = 0; i < rateNum; ++i )
@@ -1498,18 +1501,22 @@ PHY_GetTxPowerTrackingOffset(
 	)
 {
 	PHAL_DATA_TYPE		pHalData = GET_HAL_DATA(pAdapter);
-	PDM_ODM_T			pDM_Odm = &pHalData->odmpriv;
+	PDM_ODM_T			pDM_Odm = &pHalData->odmpriv;	
 	s8	offset = 0;
 	
-	if ( Rate > MGN_11M )
-	{
-		offset = pDM_Odm->Remnant_OFDMSwingIdx[RFPath]; 
-		//DBG_871X("+Remanant_OFDMSwingIdx[RFPath %u][Rate 0x%x] = 0x%x", RFPath, Rate, pDM_Odm->Remnant_OFDMSwingIdx[RFPath]);
+	if( pDM_Odm->RFCalibrateInfo.TxPowerTrackControl  == _FALSE)
+		return offset;
+	
+	if ((Rate == MGN_1M) ||(Rate == MGN_2M)||(Rate == MGN_5_5M)||(Rate == MGN_11M))
+	{ 
+		offset = pDM_Odm->Remnant_CCKSwingIdx;
+		//DBG_871X("+Remnant_CCKSwingIdx = 0x%x\n", RFPath, Rate, pDM_Odm->Remnant_CCKSwingIdx);
 	}
 	else
 	{
-		offset = pDM_Odm->Remnant_CCKSwingIdx;
-		//DBG_871X("+Remnant_CCKSwingIdx = 0x%x", RFPath, Rate, pDM_Odm->Remnant_CCKSwingIdx);
+		offset = pDM_Odm->Remnant_OFDMSwingIdx[RFPath]; 
+		//DBG_871X("+Remanant_OFDMSwingIdx[RFPath %u][Rate 0x%x] = 0x%x\n", RFPath, Rate, pDM_Odm->Remnant_OFDMSwingIdx[RFPath]);		
+		
 	}
 
 	return offset;
@@ -2598,7 +2605,7 @@ phy_ConfigMACWithParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pHalData->mac_reg = rtw_zmalloc(rlen);
+				pHalData->mac_reg = rtw_zvmalloc(rlen);
 				if(pHalData->mac_reg) {
 					_rtw_memcpy(pHalData->mac_reg, pHalData->para_file_buf, rlen);
 					pHalData->mac_reg_len = rlen;
@@ -2687,7 +2694,7 @@ phy_ConfigBBWithParaFile(
 
 	_rtw_memset(pHalData->para_file_buf, 0, MAX_PARA_FILE_BUF_LEN);
 
-	if ((*pBufLen == 0) && (pBuf == NULL))
+	if ((pBufLen != NULL) && (*pBufLen == 0) && (pBuf == NULL))
 	{
 		rtw_merge_string(file_path, PATH_LENGTH_MAX, rtw_phy_file_path, pFileName);
 	
@@ -2697,7 +2704,7 @@ phy_ConfigBBWithParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pBuf = rtw_zmalloc(rlen);
+				pBuf = rtw_zvmalloc(rlen);
 				if(pBuf) {
 					_rtw_memcpy(pBuf, pHalData->para_file_buf, rlen);
 					*pBufLen = rlen;
@@ -2710,10 +2717,6 @@ phy_ConfigBBWithParaFile(
 						case CONFIG_BB_AGC_TAB:
 							pHalData->bb_agc_tab = pBuf;
 							break;
-						default:
-							DBG_871X("Unknown ConfigType!! %d\r\n", ConfigType);
-							rtw_mfree(pBuf, rlen);
-							break;
 					}
 				}
 				else {
@@ -2724,7 +2727,7 @@ phy_ConfigBBWithParaFile(
 	}
 	else
 	{
-		if ((*pBufLen != 0) && (pBuf != NULL)) {
+		if ((pBufLen != NULL) && (*pBufLen == 0) && (pBuf == NULL)) {
 			_rtw_memcpy(pHalData->para_file_buf, pBuf, *pBufLen);
 			rtStatus = _SUCCESS;
 		}
@@ -2866,7 +2869,7 @@ phy_ParseBBPgParaFile(
 	{
 		if(!IsCommentString(szLine))
 		{
-			if( isAllSpaceOrTab( szLine, sizeof( szLine ) ) )
+			if( isAllSpaceOrTab( szLine, sizeof( *szLine ) ) )
 				continue;
 
 			// Get header info (relative value or exact value)
@@ -3154,7 +3157,7 @@ phy_ConfigBBWithPgParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pHalData->bb_phy_reg_pg = rtw_zmalloc(rlen);
+				pHalData->bb_phy_reg_pg = rtw_zvmalloc(rlen);
 				if(pHalData->bb_phy_reg_pg) {
 					_rtw_memcpy(pHalData->bb_phy_reg_pg, pHalData->para_file_buf, rlen);
 					pHalData->bb_phy_reg_pg_len = rlen;
@@ -3217,7 +3220,7 @@ phy_ConfigBBWithMpParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pHalData->bb_phy_reg_mp = rtw_zmalloc(rlen);
+				pHalData->bb_phy_reg_mp = rtw_zvmalloc(rlen);
 				if(pHalData->bb_phy_reg_mp) {
 					_rtw_memcpy(pHalData->bb_phy_reg_mp, pHalData->para_file_buf, rlen);
 					pHalData->bb_phy_reg_mp_len = rlen;
@@ -3343,7 +3346,7 @@ PHY_ConfigRFWithParaFile(
 
 	_rtw_memset(pHalData->para_file_buf, 0, MAX_PARA_FILE_BUF_LEN);
 
-	if ((*pBufLen == 0) && (pBuf == NULL))
+	if ((pBufLen != NULL) && (*pBufLen == 0) && (pBuf == NULL))
 	{
 		rtw_merge_string(file_path, PATH_LENGTH_MAX, rtw_phy_file_path, pFileName);
 
@@ -3353,7 +3356,7 @@ PHY_ConfigRFWithParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pBuf = rtw_zmalloc(rlen);
+				pBuf = rtw_zvmalloc(rlen);
 				if(pBuf) {
 					_rtw_memcpy(pBuf, pHalData->para_file_buf, rlen);
 					*pBufLen = rlen;
@@ -3366,10 +3369,6 @@ PHY_ConfigRFWithParaFile(
 						case ODM_RF_PATH_B:
 							pHalData->rf_radio_b = pBuf;
 							break;
-						default:
-							DBG_871X("Unknown eRFPath!! %d\r\n", eRFPath);
-							rtw_mfree(pBuf, rlen);
-							break;
 					}
 				}
 				else {
@@ -3380,7 +3379,7 @@ PHY_ConfigRFWithParaFile(
 	}
 	else
 	{
-		if ((*pBufLen != 0) && (pBuf != NULL)) {
+		if ((pBufLen != NULL) && (*pBufLen == 0) && (pBuf == NULL)) {
 			_rtw_memcpy(pHalData->para_file_buf, pBuf, *pBufLen);
 			rtStatus = _SUCCESS;
 		}
@@ -3635,7 +3634,7 @@ PHY_ConfigRFWithTxPwrTrackParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pHalData->rf_tx_pwr_track = rtw_zmalloc(rlen);
+				pHalData->rf_tx_pwr_track = rtw_zvmalloc(rlen);
 				if(pHalData->rf_tx_pwr_track) {
 					_rtw_memcpy(pHalData->rf_tx_pwr_track, pHalData->para_file_buf, rlen);
 					pHalData->rf_tx_pwr_track_len = rlen;
@@ -4004,7 +4003,7 @@ PHY_ConfigRFWithPowerLimitTableParaFile(
 			if (rlen > 0)
 			{
 				rtStatus = _SUCCESS;
-				pHalData->rf_tx_pwr_lmt = rtw_zmalloc(rlen);
+				pHalData->rf_tx_pwr_lmt = rtw_zvmalloc(rlen);
 				if(pHalData->rf_tx_pwr_lmt) {
 					_rtw_memcpy(pHalData->rf_tx_pwr_lmt, pHalData->para_file_buf, rlen);
 					pHalData->rf_tx_pwr_lmt_len = rlen;
@@ -4038,6 +4037,32 @@ PHY_ConfigRFWithPowerLimitTableParaFile(
 
 	return rtStatus;
 }
+void phy_free_filebuf(_adapter *padapter)
+{
+	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(padapter);
+	
+	if(pHalData->mac_reg)
+		rtw_vmfree(pHalData->mac_reg, pHalData->mac_reg_len);
+	if(pHalData->bb_phy_reg)
+		rtw_vmfree(pHalData->bb_phy_reg, pHalData->bb_phy_reg_len);
+	if(pHalData->bb_agc_tab)
+		rtw_vmfree(pHalData->bb_agc_tab, pHalData->bb_agc_tab_len);
+	if(pHalData->bb_phy_reg_pg)
+		rtw_vmfree(pHalData->bb_phy_reg_pg, pHalData->bb_phy_reg_pg_len);
+	if(pHalData->bb_phy_reg_mp)
+		rtw_vmfree(pHalData->bb_phy_reg_mp, pHalData->bb_phy_reg_mp_len);
+	if(pHalData->rf_radio_a)
+		rtw_vmfree(pHalData->rf_radio_a, pHalData->rf_radio_a_len);
+	if(pHalData->rf_radio_b)
+		rtw_vmfree(pHalData->rf_radio_b, pHalData->rf_radio_b_len);
+	if(pHalData->rf_tx_pwr_track)
+		rtw_vmfree(pHalData->rf_tx_pwr_track, pHalData->rf_tx_pwr_track_len);
+	if(pHalData->rf_tx_pwr_lmt)
+		rtw_vmfree(pHalData->rf_tx_pwr_lmt, pHalData->rf_tx_pwr_lmt_len);	
+	
+}
+
+
 #endif
 
 

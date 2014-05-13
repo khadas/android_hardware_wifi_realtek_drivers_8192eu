@@ -67,13 +67,16 @@ SwLedOn_8192EU(
 				break;
 
 			case LED_PIN_LED0:
-				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("In SwLedOn,LedAddr:%X LEDPIN=%d\n",REG_LEDCFG2, pLed->LedPin));
-				LedCfg = rtw_read8(padapter, REG_LEDCFG2);
-				rtw_write8(padapter, REG_LEDCFG2, (LedCfg&0xf0)|BIT5|BIT6); // SW control led0 on.
+				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("In SwLedOn,LedAddr:%X LEDPIN=%d\n",REG_LEDCFG1, pLed->LedPin));
+				LedCfg = rtw_read8(padapter, REG_LEDCFG0);						
+				rtw_write8(padapter, REG_LEDCFG1, (LedCfg&~BIT7)); // SW control led1 on.
 				break;
 
 			case LED_PIN_LED1:
-				rtw_write8(padapter, REG_LEDCFG2, (LedCfg&0x0f)|BIT5); // SW control led1 on.
+				PHY_SetMacReg(padapter, 0x64, BIT1, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT15, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT10|BIT9|BIT8, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT11, 0);
 				break;
 
 			default:
@@ -87,30 +90,22 @@ SwLedOn_8192EU(
 			case LED_PIN_GPIO0:
 				break;
 
-			case LED_PIN_LED0:
-				if(pHalData->AntDivCfg==0)
-				{
-					LedCfg = rtw_read8(padapter, REG_LEDCFG0);
-					rtw_write8(padapter, REG_LEDCFG0, (LedCfg&0x70)|BIT5); // SW control led0 on.
-					RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOn LED0 0x%x\n", rtw_read32(padapter, REG_LEDCFG0)));
-				}
-				else
-				{
-					LedCfg = rtw_read8(padapter, REG_LEDCFG2);
-					rtw_write8(padapter, REG_LEDCFG2, (LedCfg&0xe0)|BIT7|BIT6|BIT5); // SW control led0 on.
-					RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOn LED0 Addr 0x%x,  0x%x\n", REG_LEDCFG2, rtw_read32(padapter, REG_LEDCFG2)));
-				}
+			case LED_PIN_LED0: //8192EU don't have LED0, so we jump this case to set LED1
+				LedCfg = rtw_read8(padapter, (REG_LEDCFG1));
+				rtw_write8(padapter, (REG_LEDCFG1), (LedCfg&~BIT7)); // SW control led1 on.
+				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOn LED1 0x%x\n", rtw_read32(padapter, REG_LEDCFG1)));
 				break;
 
 			case LED_PIN_LED1:
-				LedCfg = rtw_read8(padapter, (REG_LEDCFG1));
-				rtw_write8(padapter, (REG_LEDCFG1), (LedCfg&0x70)|BIT5); // SW control led1 on.
-				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOn LED1 0x%x\n", rtw_read32(padapter, REG_LEDCFG1)));
+				PHY_SetMacReg(padapter, 0x64, BIT1, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT15, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT10|BIT9|BIT8, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT11, 0);
 				break;
 
 			case LED_PIN_LED2:
 				LedCfg = rtw_read8(padapter, (REG_LEDCFG2));
-				rtw_write8(padapter, (REG_LEDCFG2), (LedCfg&0x70)|BIT5); // SW control led1 on.
+				rtw_write8(padapter, (REG_LEDCFG2), (LedCfg&~BIT7)); // SW control led1 on.
 				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOn LED2 0x%x\n", rtw_read32(padapter, REG_LEDCFG2)));
 				break;
 				
@@ -159,24 +154,16 @@ SwLedOff_8192EU(
 			case LED_PIN_GPIO0:
 				break;
 
-			case LED_PIN_LED0:
-				if(pHalData->bLedOpenDrain == _TRUE)					
-				{
-					LedCfg &= 0x90; // Set to software control.				
-					rtw_write8(padapter, REG_LEDCFG2, (LedCfg|BIT3));				
-					LedCfg = rtw_read8(padapter, REG_MAC_PINMUX_CFG);
-					LedCfg &= 0xFE;
-					rtw_write8(padapter, REG_MAC_PINMUX_CFG, LedCfg);									
-				}
-				else
-				{
-					rtw_write8(padapter, REG_LEDCFG2, (LedCfg|BIT3|BIT5|BIT6));
-				}
+			case LED_PIN_LED0:	//8192EU don't have LED0, so we jump this case to set LED1
+				LedCfg = rtw_read8(padapter, REG_LEDCFG1);
+				rtw_write8(padapter, REG_LEDCFG1, LedCfg|BIT7);
 				break;
 
 			case LED_PIN_LED1:
-				LedCfg &= 0x0f; // Set to software control.
-				rtw_write8(padapter, REG_LEDCFG2, (LedCfg|BIT3));
+				PHY_SetMacReg(padapter, 0x64, BIT1, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT15, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT10|BIT9|BIT8, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT11, 1);
 				break;
 
 			default:
@@ -190,38 +177,21 @@ SwLedOff_8192EU(
 			case LED_PIN_GPIO0:
 				break;
 
-			case LED_PIN_LED0:
-				 if(pHalData->AntDivCfg==0)
-				{
-					LedCfg = rtw_read8(padapter, REG_LEDCFG0);
-					LedCfg &= 0x70; // Set to software control.
-					rtw_write8(padapter, REG_LEDCFG0, (LedCfg|BIT3|BIT5));
-					RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOff LED0 0x%x\n", rtw_read32(padapter, REG_LEDCFG0)));
-				}
-				else
-				{
-					LedCfg = rtw_read8(padapter, REG_LEDCFG2);
-					LedCfg &= 0xe0; // Set to software control. 			
-					if(IS_HARDWARE_TYPE_8723A(padapter))
-						rtw_write8(padapter, REG_LEDCFG2, (LedCfg|BIT3|BIT7|BIT5));
-					else
-						rtw_write8(padapter, REG_LEDCFG2, (LedCfg|BIT3|BIT7|BIT6|BIT5));
-					RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOff LED0 0x%x\n", rtw_read32(padapter, REG_LEDCFG2)));
-				}
+			case LED_PIN_LED0://8192EU don't have LED0, so we jump this case to set LED1
+				LedCfg = rtw_read8(padapter, REG_LEDCFG1);
+				rtw_write8(padapter, REG_LEDCFG1, LedCfg|BIT7);
 				break;
 
 			case LED_PIN_LED1:
-				LedCfg = rtw_read8(padapter, REG_LEDCFG1);
-				LedCfg &= 0x70; // Set to software control.
-				rtw_write8(padapter, REG_LEDCFG1, (LedCfg|BIT3|BIT5));
-				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOff LED1 0x%x\n", rtw_read32(padapter, REG_LEDCFG1)));
+				PHY_SetMacReg(padapter, 0x64, BIT1, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT15, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT10|BIT9|BIT8, 0);
+				PHY_SetMacReg(padapter, 0x4C, BIT11, 1);
 				break;
 
 			case LED_PIN_LED2:
 				LedCfg = rtw_read8(padapter, REG_LEDCFG2);
-				LedCfg &= 0x70; // Set to software control.
-				rtw_write8(padapter, REG_LEDCFG2, (LedCfg|BIT3|BIT5));
-				RT_TRACE(_module_rtl8712_led_c_,_drv_info_,("SwLedOff LED1 0x%x\n", rtw_read32(padapter, REG_LEDCFG2)));
+				rtw_write8(padapter, REG_LEDCFG2, LedCfg|BIT7);
 				break;
 
 			default:

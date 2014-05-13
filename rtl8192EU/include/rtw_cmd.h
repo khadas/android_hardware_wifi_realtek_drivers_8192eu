@@ -130,6 +130,16 @@ do {\
 	pcmd->rspsz = 0;\
 } while(0)
 
+#define init_h2fwcmd_w_parm_no_parm_rsp(pcmd, code) \
+do {\
+	_rtw_init_listhead(&pcmd->list);\
+	pcmd->cmdcode = code;\
+	pcmd->parmbuf = NULL;\
+	pcmd->cmdsz = 0;\
+	pcmd->rsp = NULL;\
+	pcmd->rspsz = 0;\
+} while(0)
+
 struct c2h_evt_hdr {
 	u8 id:4;
 	u8 plen:4;
@@ -210,7 +220,9 @@ enum rtw_drvextra_cmd_id
 	DM_IN_LPS_WK_CID,
 	DM_RA_MSK_WK_CID, //add for STA update RAMask when bandwith change.
 	BEAMFORMING_WK_CID,
-	MAX_WK_CID};
+	LPS_CHANGE_DTIM_CID,
+	MAX_WK_CID
+};
 
 enum LPS_CTRL_TYPE
 {
@@ -997,6 +1009,7 @@ extern u8 rtw_dynamic_chk_wk_cmd(_adapter *adapter);
 
 u8 rtw_lps_ctrl_wk_cmd(_adapter*padapter, u8 lps_ctrl_type, u8 enqueue);
 u8 rtw_dm_in_lps_wk_cmd(_adapter*padapter);
+u8 rtw_lps_change_dtim_cmd(_adapter*padapter, u8 dtim);
 
 #if (RATE_ADAPTIVE_SUPPORT==1)
 u8 rtw_rpt_timer_cfg_cmd(_adapter*padapter, u16 minRptTime);
@@ -1006,7 +1019,7 @@ u8 rtw_rpt_timer_cfg_cmd(_adapter*padapter, u16 minRptTime);
 extern  u8 rtw_antenna_select_cmd(_adapter*padapter, u8 antenna,u8 enqueue);
 #endif
 
-u8 rtw_dm_ra_mask_wk_cmd(_adapter*padapter);
+u8 rtw_dm_ra_mask_wk_cmd(_adapter*padapter, u8 *psta);
 
 extern u8 rtw_ps_cmd(_adapter*padapter);
 
@@ -1118,6 +1131,7 @@ enum rtw_h2c_cmd
 
 	GEN_CMD_CODE(_SetChannelSwitch), /*61*/
 	GEN_CMD_CODE(_TDLS), /*62*/
+	GEN_CMD_CODE(_ChkBMCSleepq), /*63*/
 	
 	MAX_H2CCMD
 };
@@ -1200,6 +1214,7 @@ struct _cmd_callback 	rtw_cmd_callback[] =
 	
 	{GEN_CMD_CODE(_SetChannelSwitch), NULL},/*61*/
 	{GEN_CMD_CODE(_TDLS), NULL},/*62*/
+	{GEN_CMD_CODE(_ChkBMCSleepq), NULL}, /*63*/
 };
 #endif
 

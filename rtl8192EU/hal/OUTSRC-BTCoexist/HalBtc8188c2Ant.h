@@ -88,7 +88,8 @@ typedef struct _COEX_STA_8188C_2ANT{
 //===========================================
 VOID
 EXhalbtc8188c2ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	);
 VOID
 EXhalbtc8188c2ant_InitCoexDm(

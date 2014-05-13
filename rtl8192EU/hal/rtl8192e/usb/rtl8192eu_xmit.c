@@ -310,7 +310,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz ,u8 bag
 			//DATA/RTS  Rate FB LMT
 			SET_TX_DESC_DATA_RATE_FB_LIMIT_92E(ptxdesc, 0x1f);
 			SET_TX_DESC_RTS_RATE_FB_LIMIT_92E(ptxdesc, 0xf);
-			
+
 			if(pHalData->fw_ractrl == _FALSE)  {
 				struct dm_priv	*pdmpriv = &pHalData->dmpriv;
 				SET_TX_DESC_USE_RATE_92E(ptxdesc, 1);
@@ -326,7 +326,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz ,u8 bag
 			if(padapter->fix_rate!= 0xFF){
 				struct dm_priv	*pdmpriv = &pHalData->dmpriv;
 				SET_TX_DESC_USE_RATE_92E(ptxdesc, 1);
-				if(pdmpriv->INIDATA_RATE[pattrib->mac_id] & BIT(7))
+				//if(pdmpriv->INIDATA_RATE[pattrib->mac_id] & BIT(7))
                  		{
 					if(padapter->fix_rate & BIT(7))
 						SET_TX_DESC_DATA_SHORT_92E(ptxdesc, 1);
@@ -400,7 +400,7 @@ static s32 update_txdesc(struct xmit_frame *pxmitframe, u8 *pmem, s32 sz ,u8 bag
 	else if(((pxmitframe->frame_tag&0x0f) == MP_FRAMETAG) &&
 		(padapter->registrypriv.mp_mode == 1))
 	{
-		fill_txdesc_for_mp(padapter, (struct tx_desc *)ptxdesc);
+		fill_txdesc_for_mp(padapter, ptxdesc);
 	}
 #endif
 	else
@@ -695,8 +695,9 @@ s32 rtl8192eu_xmitframe_complete(_adapter *padapter, struct xmit_priv *pxmitpriv
 	// check pkt amount in one bulk
 	descCount = 0;
 	bulkPtr = bulkSize;
-	if (pbuf < bulkPtr)
+	if (pbuf < bulkPtr){
 		descCount++;
+	}
 	else {
 		descCount = 0;
 		bulkPtr = ((pbuf / bulkSize) + 1) * bulkSize; // round to next bulkSize

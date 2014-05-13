@@ -155,6 +155,7 @@ static void process_link_qual(_adapter *padapter,union recv_frame *prframe)
 
 }
 
+
 static void process_phy_info(_adapter *padapter, void *prframe)
 {
 	union recv_frame *precvframe = (union recv_frame *)prframe;
@@ -173,6 +174,10 @@ static void process_phy_info(_adapter *padapter, void *prframe)
 	// Check EVM
 	//
 	process_link_qual(padapter,  precvframe);
+	
+	#ifdef DBG_RX_SIGNAL_DISPLAY_RAW_DATA
+	rtw_store_phy_info( padapter,prframe);
+	#endif
 
 }
 
@@ -246,10 +251,11 @@ void rtl8192e_query_rx_phy_status(
 		!pattrib->icv_err && !pattrib->crc_err &&
 		_rtw_memcmp(get_hdr_bssid(wlanhdr), get_bssid(&padapter->mlmepriv), ETH_ALEN));
 
-	pkt_info.bPacketToSelf = pkt_info.bPacketMatchBSSID && (_rtw_memcmp(get_da(wlanhdr), myid(&padapter->eeprompriv), ETH_ALEN));
+	pkt_info.bPacketToSelf = pkt_info.bPacketMatchBSSID && (_rtw_memcmp(get_ra(wlanhdr), myid(&padapter->eeprompriv), ETH_ALEN));
 
 	pkt_info.bPacketBeacon = pkt_info.bPacketMatchBSSID && (GetFrameSubType(wlanhdr) == WIFI_BEACON);
 
+/*
 	if(pkt_info.bPacketBeacon){
 		if(check_fwstate(&padapter->mlmepriv, WIFI_STATION_STATE) == _TRUE){				
 			sa = padapter->mlmepriv.cur_network.network.MacAddress;
@@ -266,10 +272,12 @@ void rtl8192e_query_rx_phy_status(
 			sa = NULL;
 		}
 	}
-	else{
-		sa = get_sa(wlanhdr);
+	else{	
+		sa = get_sa(wlanhdr);		
 	}	
-	
+*/	
+	sa = get_ta(wlanhdr);
+
 	pstapriv = &padapter->stapriv;
 	pkt_info.StationID = 0xFF;
 	psta = rtw_get_stainfo(pstapriv, sa);

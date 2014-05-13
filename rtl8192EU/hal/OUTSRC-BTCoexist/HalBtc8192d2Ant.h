@@ -109,7 +109,8 @@ typedef struct _COEX_STA_8192D_2ANT{
 //===========================================
 VOID
 EXhalbtc8192d2ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	);
 VOID
 EXhalbtc8192d2ant_InitCoexDm(

@@ -1714,7 +1714,8 @@ halbtc8192d2ant_IsBtCoexistEnter(
 //============================================================
 VOID
 EXhalbtc8192d2ant_InitHwConfig(
-	IN	PBTC_COEXIST		pBtCoexist
+	IN	PBTC_COEXIST		pBtCoexist,
+	IN	BOOLEAN				bWifiOnly
 	)
 {
 	u1Byte	u1Tmp=0;

@@ -90,6 +90,26 @@ void rtw_hal_power_off(_adapter *padapter)
 		padapter->HalFunc.hal_power_off(padapter);	
 }
 
+void rtw_hal_init_opmode(_adapter *padapter) 
+{
+	NDIS_802_11_NETWORK_INFRASTRUCTURE networkType = Ndis802_11InfrastructureMax;
+	struct  mlme_priv *pmlmepriv = &(padapter->mlmepriv);
+	sint fw_state;
+
+	fw_state = get_fwstate(pmlmepriv);
+
+	if (fw_state & WIFI_ADHOC_STATE) 
+		networkType = Ndis802_11IBSS;
+	else if (fw_state & WIFI_STATION_STATE)
+		networkType = Ndis802_11Infrastructure;
+	else if (fw_state & WIFI_AP_STATE)
+		networkType = Ndis802_11APMode;
+	else
+		return;
+
+	rtw_setopmode_cmd(padapter, networkType, _FALSE); 
+}
+
 uint	 rtw_hal_init(_adapter *padapter) 
 {
 	uint	status = _SUCCESS;
@@ -130,6 +150,9 @@ uint	 rtw_hal_init(_adapter *padapter)
 	status = padapter->HalFunc.hal_init(padapter);
 
 	if(status == _SUCCESS){
+
+		rtw_hal_init_opmode(padapter);
+
 		for (i = 0; i<dvobj->iface_nums; i++) {
 			padapter = dvobj->padapters[i];
 			padapter->hw_init_completed = _TRUE;
@@ -257,7 +280,7 @@ u8 rtw_hal_check_ips_status(_adapter *padapter)
 	return val;
 }
 
-#ifdef CONFIG_WOWLAN
+#if defined(CONFIG_WOWLAN) || defined(CONFIG_AP_WOWLAN)
 void rtw_hal_clear_interrupt(_adapter *padapter)
 {
     if (padapter->HalFunc.clear_interrupt)
@@ -319,6 +342,9 @@ s32	rtw_hal_xmit(_adapter *padapter, struct xmit_frame *pxmitframe)
 	return _FALSE;	
 }
 
+/*
+ * [IMPORTANT] This function would be run in interrupt context.
+ */
 s32	rtw_hal_mgnt_xmit(_adapter *padapter, struct xmit_frame *pmgntframe)
 {
 	s32 ret = _FAIL;
@@ -676,6 +702,36 @@ c2h_id_filter rtw_hal_c2h_id_filter_ccx(_adapter *adapter)
 s32 rtw_hal_is_disable_sw_channel_plan(PADAPTER padapter)
 {
 	return GET_HAL_DATA(padapter)->bDisableSWChannelPlan;
+}
+
+s32 rtw_hal_macid_sleep(PADAPTER padapter, u32 macid)
+{
+	u8 support;
+
+
+	support = _FALSE;
+	rtw_hal_get_def_var(padapter, HAL_DEF_MACID_SLEEP, &support);
+	if (_FALSE == support)
+		return _FAIL;
+
+	rtw_hal_set_hwreg(padapter, HW_VAR_MACID_SLEEP, (u8*)&macid);
+
+	return _SUCCESS;
+}
+
+s32 rtw_hal_macid_wakeup(PADAPTER padapter, u32 macid)
+{
+	u8 support;
+
+
+	support = _FALSE;
+	rtw_hal_get_def_var(padapter, HAL_DEF_MACID_SLEEP, &support);
+	if (_FALSE == support)
+		return _FAIL;
+
+	rtw_hal_set_hwreg(padapter, HW_VAR_MACID_WAKEUP, (u8*)&macid);
+
+	return _SUCCESS;
 }
 
 #ifdef CONFIG_BT_COEXIST

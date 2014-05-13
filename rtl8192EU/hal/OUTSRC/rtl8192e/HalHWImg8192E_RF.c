@@ -432,8 +432,8 @@ ODM_ReadAndConfig_MP_8192E_RadioB(
 
 u1Byte gDeltaSwingTableIdx_MP_5GB_N_TxPowerTrack_AP_8192E[][DELTA_SWINGIDX_SIZE] = {
 	{0, 1, 1, 2, 2, 3, 4, 5, 5, 6,  6,  7,  7,  8,  8,  9,  9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
+	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 19, 20, 20, 20},
+	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
 };
 u1Byte gDeltaSwingTableIdx_MP_5GB_P_TxPowerTrack_AP_8192E[][DELTA_SWINGIDX_SIZE] = {
 	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 16, 17, 17, 18, 19, 20, 20, 20},
@@ -491,8 +491,8 @@ ODM_ReadAndConfig_MP_8192E_TxPowerTrack_AP(
 
 u1Byte gDeltaSwingTableIdx_MP_5GB_N_TxPowerTrack_PCIE_8192E[][DELTA_SWINGIDX_SIZE] = {
 	{0, 1, 1, 2, 2, 3, 4, 5, 5, 6,  6,  7,  7,  8,  8,  9,  9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
+	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 19, 20, 20, 20},
+	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
 };
 u1Byte gDeltaSwingTableIdx_MP_5GB_P_TxPowerTrack_PCIE_8192E[][DELTA_SWINGIDX_SIZE] = {
 	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 16, 17, 17, 18, 19, 20, 20, 20},
@@ -545,72 +545,13 @@ ODM_ReadAndConfig_MP_8192E_TxPowerTrack_PCIE(
 }
 
 /******************************************************************************
-*                           TxPowerTrack_SDIO.TXT
-******************************************************************************/
-
-u1Byte gDeltaSwingTableIdx_MP_5GB_N_TxPowerTrack_SDIO_8192E[][DELTA_SWINGIDX_SIZE] = {
-	{0, 1, 1, 2, 2, 3, 4, 5, 5, 6,  6,  7,  7,  8,  8,  9,  9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-};
-u1Byte gDeltaSwingTableIdx_MP_5GB_P_TxPowerTrack_SDIO_8192E[][DELTA_SWINGIDX_SIZE] = {
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 16, 17, 17, 18, 19, 20, 20, 20},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 19, 20, 20, 20},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
-};
-u1Byte gDeltaSwingTableIdx_MP_5GA_N_TxPowerTrack_SDIO_8192E[][DELTA_SWINGIDX_SIZE] = {
-	{0, 1, 2, 3, 3, 4, 4, 5, 5, 6,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 6,  7,  7,  8,  8,  9, 10, 11, 11, 12, 13, 13, 14, 15, 16, 16, 16, 16, 16, 16, 16},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 10, 11, 11, 12, 13, 14, 14, 15, 15, 16, 16, 16, 16, 16, 16, 16},
-};
-u1Byte gDeltaSwingTableIdx_MP_5GA_P_TxPowerTrack_SDIO_8192E[][DELTA_SWINGIDX_SIZE] = {
-	{0, 1, 1, 2, 2, 3, 4, 5, 5, 6,  7,  8,  8,  9, 10, 11, 11, 12, 13, 14, 14, 15, 15, 16, 16, 17, 18, 19, 19, 19},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
-};
-u1Byte gDeltaSwingTableIdx_MP_2GB_N_TxPowerTrack_SDIO_8192E[]    = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 23, 23, 23, 23, 23};
-u1Byte gDeltaSwingTableIdx_MP_2GB_P_TxPowerTrack_SDIO_8192E[]    = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-u1Byte gDeltaSwingTableIdx_MP_2GA_N_TxPowerTrack_SDIO_8192E[]    = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 23, 23, 23, 23, 23};
-u1Byte gDeltaSwingTableIdx_MP_2GA_P_TxPowerTrack_SDIO_8192E[]    = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-u1Byte gDeltaSwingTableIdx_MP_2GCCKB_N_TxPowerTrack_SDIO_8192E[] = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 23, 23, 23, 23, 23};
-u1Byte gDeltaSwingTableIdx_MP_2GCCKB_P_TxPowerTrack_SDIO_8192E[] = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-u1Byte gDeltaSwingTableIdx_MP_2GCCKA_N_TxPowerTrack_SDIO_8192E[] = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 23, 23, 23, 23, 23};
-u1Byte gDeltaSwingTableIdx_MP_2GCCKA_P_TxPowerTrack_SDIO_8192E[] = {0, 1, 2, 3, 4, 5, 6, 7, 8,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
-
-void
-ODM_ReadAndConfig_MP_8192E_TxPowerTrack_SDIO(
- 	IN   PDM_ODM_T  pDM_Odm
- 	)
-{
-	PODM_RF_CAL_T  pRFCalibrateInfo = &(pDM_Odm->RFCalibrateInfo);
-
-	ODM_RT_TRACE(pDM_Odm, ODM_COMP_INIT, ODM_DBG_TRACE, ("===> ODM_ReadAndConfig_MP_MP_8192E\n"));
-
-
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GA_P, gDeltaSwingTableIdx_MP_2GA_P_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GA_N, gDeltaSwingTableIdx_MP_2GA_N_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GB_P, gDeltaSwingTableIdx_MP_2GB_P_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GB_N, gDeltaSwingTableIdx_MP_2GB_N_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GCCKA_P, gDeltaSwingTableIdx_MP_2GCCKA_P_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GCCKA_N, gDeltaSwingTableIdx_MP_2GCCKA_N_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GCCKB_P, gDeltaSwingTableIdx_MP_2GCCKB_P_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_2GCCKB_N, gDeltaSwingTableIdx_MP_2GCCKB_N_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE);
-
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_5GA_P, gDeltaSwingTableIdx_MP_5GA_P_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE*3);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_5GA_N, gDeltaSwingTableIdx_MP_5GA_N_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE*3);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_5GB_P, gDeltaSwingTableIdx_MP_5GB_P_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE*3);
-	ODM_MoveMemory(pDM_Odm, pRFCalibrateInfo->DeltaSwingTableIdx_5GB_N, gDeltaSwingTableIdx_MP_5GB_N_TxPowerTrack_SDIO_8192E, DELTA_SWINGIDX_SIZE*3);
-}
-
-/******************************************************************************
 *                           TxPowerTrack_USB.TXT
 ******************************************************************************/
 
 u1Byte gDeltaSwingTableIdx_MP_5GB_N_TxPowerTrack_USB_8192E[][DELTA_SWINGIDX_SIZE] = {
 	{0, 1, 1, 2, 2, 3, 4, 5, 5, 6,  6,  7,  7,  8,  8,  9,  9, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
-	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 14, 14, 14, 14, 14},
+	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 19, 20, 20, 20},
+	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
 };
 u1Byte gDeltaSwingTableIdx_MP_5GB_P_TxPowerTrack_USB_8192E[][DELTA_SWINGIDX_SIZE] = {
 	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 16, 17, 17, 18, 19, 20, 20, 20},
@@ -627,6 +568,7 @@ u1Byte gDeltaSwingTableIdx_MP_5GA_P_TxPowerTrack_USB_8192E[][DELTA_SWINGIDX_SIZE
 	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
 	{0, 1, 2, 3, 3, 4, 5, 6, 6, 7,  8,  9,  9, 10, 11, 12, 12, 13, 14, 15, 15, 16, 17, 18, 18, 19, 20, 21, 21, 21},
 };
+#if 0
 u1Byte gDeltaSwingTableIdx_MP_2GB_N_TxPowerTrack_USB_8192E[]    = {0, 0, 1, 2, 2, 2, 3, 3, 3, 4,  5,  5,  6,  6,  6,  6,  7,  7,  7,  8,  8,  9,  9, 10, 10, 11, 12, 13, 14, 15};
 u1Byte gDeltaSwingTableIdx_MP_2GB_P_TxPowerTrack_USB_8192E[]    = {0, 0, 1, 2, 2, 2, 3, 3, 3, 4,  5,  5,  6,  6,  7,  7,  8,  8,  9,  9,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
 u1Byte gDeltaSwingTableIdx_MP_2GA_N_TxPowerTrack_USB_8192E[]    = {0, 0, 1, 2, 2, 2, 3, 3, 3, 4,  5,  5,  6,  6,  6,  6,  7,  7,  7,  8,  8,  9,  9, 10, 10, 11, 12, 13, 14, 15};
@@ -635,7 +577,17 @@ u1Byte gDeltaSwingTableIdx_MP_2GCCKB_N_TxPowerTrack_USB_8192E[] = {0, 0, 1, 2, 2
 u1Byte gDeltaSwingTableIdx_MP_2GCCKB_P_TxPowerTrack_USB_8192E[] = {0, 0, 0, 0, 1, 1, 1, 3, 3, 4,  4,  4,  4,  6,  6,  6,  6,  7,  7,  7,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
 u1Byte gDeltaSwingTableIdx_MP_2GCCKA_N_TxPowerTrack_USB_8192E[] = {0, 0, 1, 2, 2, 3, 3, 4, 4, 5,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
 u1Byte gDeltaSwingTableIdx_MP_2GCCKA_P_TxPowerTrack_USB_8192E[] = {0, 0, 0, 0, 1, 1, 1, 3, 3, 4,  4,  4,  4,  6,  6,  6,  6,  7,  7,  7,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
+#else
+u1Byte gDeltaSwingTableIdx_MP_2GB_N_TxPowerTrack_USB_8192E[]    = {0, 0, 0, 1, 1, 2, 2, 3, 3, 3,  4,  4,  5,  5,  5,  5,  7,  7,  7,  8,  9,  9,  9, 10, 10, 11, 12, 13, 14, 15};
+u1Byte gDeltaSwingTableIdx_MP_2GB_P_TxPowerTrack_USB_8192E[]    = {0, 0, 0, 1, 2, 2, 2, 3, 4, 4,  5,  5,  5,  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
+u1Byte gDeltaSwingTableIdx_MP_2GA_N_TxPowerTrack_USB_8192E[]    = {0, 0, 0, 1, 1, 2, 2, 3, 3, 3,  4,  4,  5,  5,  5,  5,  7,  7,  7,  8,  9,  9,  9, 10, 10, 11, 12, 13, 14, 15} ;
+u1Byte gDeltaSwingTableIdx_MP_2GA_P_TxPowerTrack_USB_8192E[]    = {0, 0, 0, 1, 2, 2, 2, 3, 4, 4,  5,  5,  5,  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
+u1Byte gDeltaSwingTableIdx_MP_2GCCKB_N_TxPowerTrack_USB_8192E[] = {0, 0, 1, 1, 2, 2, 3, 4, 4, 5,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
+u1Byte gDeltaSwingTableIdx_MP_2GCCKB_P_TxPowerTrack_USB_8192E[] = {0, 0, 0, 0, 1, 1, 1, 3, 3, 4,  4,  4,  4,  6,  6,  6,  6,  7,  7,  7,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
+u1Byte gDeltaSwingTableIdx_MP_2GCCKA_N_TxPowerTrack_USB_8192E[] = {0, 0, 1, 1, 2, 3, 3, 4, 4, 5,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
+u1Byte gDeltaSwingTableIdx_MP_2GCCKA_P_TxPowerTrack_USB_8192E[] = {0, 0, 0, 0, 1, 1, 1, 3, 3, 4,  4,  4,  4,  6,  6,  6,  6,  7,  7,  7,  9, 10, 10, 11, 11, 12, 12, 13, 14, 15};
 
+#endif
 void
 ODM_ReadAndConfig_MP_8192E_TxPowerTrack_USB(
  	IN   PDM_ODM_T  pDM_Odm
@@ -708,7 +660,7 @@ pu1Byte Array_MP_8192E_TXPWR_LMT[] = {
 	"MKK", "2.4G", "20M", "CCK", "1T", "13", "32",
 	"FCC", "2.4G", "20M", "CCK", "1T", "14", "63", 
 	"ETSI", "2.4G", "20M", "CCK", "1T", "14", "63", 
-	"MKK", "2.4G", "20M", "CCK", "1T", "14", "32",
+	"MKK", "2.4G", "20M", "CCK", "1T", "14", "32",	
 	"FCC", "2.4G", "20M", "OFDM", "1T", "01", "30", 
 	"ETSI", "2.4G", "20M", "OFDM", "1T", "01", "28", 
 	"MKK", "2.4G", "20M", "OFDM", "1T", "01", "28",
@@ -750,7 +702,7 @@ pu1Byte Array_MP_8192E_TXPWR_LMT[] = {
 	"MKK", "2.4G", "20M", "OFDM", "1T", "13", "28",
 	"FCC", "2.4G", "20M", "OFDM", "1T", "14", "63", 
 	"ETSI", "2.4G", "20M", "OFDM", "1T", "14", "63", 
-	"MKK", "2.4G", "20M", "OFDM", "1T", "14", "63",
+	"MKK", "2.4G", "20M", "OFDM", "1T", "14", "63",	
 	"FCC", "2.4G", "20M", "HT", "1T", "01", "30", 
 	"ETSI", "2.4G", "20M", "HT", "1T", "01", "28", 
 	"MKK", "2.4G", "20M", "HT", "1T", "01", "28",
@@ -793,6 +745,48 @@ pu1Byte Array_MP_8192E_TXPWR_LMT[] = {
 	"FCC", "2.4G", "20M", "HT", "1T", "14", "63", 
 	"ETSI", "2.4G", "20M", "HT", "1T", "14", "63", 
 	"MKK", "2.4G", "20M", "HT", "1T", "14", "63",
+	"FCC", "2.4G", "20M", "HT", "2T", "01", "28", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "01", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "01", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "02", "28", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "02", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "02", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "03", "34", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "03", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "03", "30",
+	"FCC", "2.4G", "20M", "HT", "2T", "04", "34", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "04", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "04", "30",
+	"FCC", "2.4G", "20M", "HT", "2T", "05", "34", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "05", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "05", "30",
+	"FCC", "2.4G", "20M", "HT", "2T", "06", "34", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "06", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "06", "30",
+	"FCC", "2.4G", "20M", "HT", "2T", "07", "34", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "07", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "07", "30",
+	"FCC", "2.4G", "20M", "HT", "2T", "08", "34", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "08", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "08", "30",
+	"FCC", "2.4G", "20M", "HT", "2T", "09", "26", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "09", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "09", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "10", "26", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "10", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "10", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "11", "26", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "11", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "11", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "12", "63", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "12", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "12", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "13", "63", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "13", "26", 
+	"MKK", "2.4G", "20M", "HT", "2T", "13", "28",
+	"FCC", "2.4G", "20M", "HT", "2T", "14", "63", 
+	"ETSI", "2.4G", "20M", "HT", "2T", "14", "63", 
+	"MKK", "2.4G", "20M", "HT", "2T", "14", "63",
 	"FCC", "2.4G", "20M", "HT", "2T", "01", "28", 
 	"ETSI", "2.4G", "20M", "HT", "2T", "01", "26", 
 	"MKK", "2.4G", "20M", "HT", "2T", "01", "26",
@@ -877,6 +871,48 @@ pu1Byte Array_MP_8192E_TXPWR_LMT[] = {
 	"FCC", "2.4G", "40M", "HT", "1T", "14", "63", 
 	"ETSI", "2.4G", "40M", "HT", "1T", "14", "63", 
 	"MKK", "2.4G", "40M", "HT", "1T", "14", "63",
+	"FCC", "2.4G", "40M", "HT", "2T", "01", "63", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "01", "63", 
+	"MKK", "2.4G", "40M", "HT", "2T", "01", "63",
+	"FCC", "2.4G", "40M", "HT", "2T", "02", "63", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "02", "63", 
+	"MKK", "2.4G", "40M", "HT", "2T", "02", "63",
+	"FCC", "2.4G", "40M", "HT", "2T", "03", "20", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "03", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "03", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "04", "20", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "04", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "04", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "05", "20", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "05", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "05", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "06", "28", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "06", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "06", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "07", "28", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "07", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "07", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "08", "28", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "08", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "08", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "09", "22", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "09", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "09", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "10", "22", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "10", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "10", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "11", "22", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "11", "26", 
+	"MKK", "2.4G", "40M", "HT", "2T", "11", "26",
+	"FCC", "2.4G", "40M", "HT", "2T", "12", "63", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "12", "63", 
+	"MKK", "2.4G", "40M", "HT", "2T", "12", "63",
+	"FCC", "2.4G", "40M", "HT", "2T", "13", "63", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "13", "63", 
+	"MKK", "2.4G", "40M", "HT", "2T", "13", "63",
+	"FCC", "2.4G", "40M", "HT", "2T", "14", "63", 
+	"ETSI", "2.4G", "40M", "HT", "2T", "14", "63", 
+	"MKK", "2.4G", "40M", "HT", "2T", "14", "63",
 	"FCC", "2.4G", "40M", "HT", "2T", "01", "63", 
 	"ETSI", "2.4G", "40M", "HT", "2T", "01", "63", 
 	"MKK", "2.4G", "40M", "HT", "2T", "01", "63",

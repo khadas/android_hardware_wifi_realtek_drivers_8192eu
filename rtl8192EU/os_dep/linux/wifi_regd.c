@@ -482,7 +482,7 @@ static int _rtw_regd_init_wiphy(struct rtw_regulatory *reg,
 {
 	const struct ieee80211_regdomain *regd;
 
-	wiphy->reg_notifier = (void *)reg_notifier;
+	wiphy->reg_notifier = reg_notifier;
 
 	wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
 	wiphy->flags &= ~WIPHY_FLAG_STRICT_REGULATORY;
@@ -538,9 +538,7 @@ int rtw_regd_init(_adapter * padapter,
 
 int rtw_reg_notifier(struct wiphy *wiphy, struct regulatory_request *request)
 {
-	struct wireless_dev *rtw_wdev = wiphy_to_wdev(wiphy);
 	struct rtw_regulatory *reg = NULL;
-	_adapter *padapter = wiphy_to_adapter(wiphy);
 
 	DBG_8192C("%s\n", __func__);
 
