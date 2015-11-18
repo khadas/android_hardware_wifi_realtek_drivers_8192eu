@@ -22,11 +22,7 @@
 
 //#include "hal_com.h"
 
-#if 1
 #include "hal_data.h"
-#else
-#include "../hal/OUTSRC/odm_precomp.h"
-#endif
 
 #include "rtl8192d_spec.h"
 #include "Hal8192DPhyReg.h"

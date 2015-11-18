@@ -118,7 +118,8 @@ enum mstat_f {
 	MSTAT_FUNC_RX_IO = 0x03<<8,
 	MSTAT_FUNC_TX = 0x04<<8,
 	MSTAT_FUNC_RX = 0x05<<8,
-	MSTAT_FUNC_MAX = 0x06<<8,
+	MSTAT_FUNC_CFG_VENDOR = 0x06<<8,
+	MSTAT_FUNC_MAX = 0x07<<8,
 };
 
 #define mstat_tf_idx(flags) ((flags)&0xff)
@@ -255,7 +256,7 @@ void _rtw_usb_buffer_free(struct usb_device *dev, size_t size, void *addr, dma_a
 extern void*	rtw_malloc2d(int h, int w, size_t size);
 extern void	rtw_mfree2d(void *pbuf, int h, int w, int size);
 
-extern void	_rtw_memcpy(void* dec, void* sour, u32 sz);
+extern void	_rtw_memcpy(void *dec, const void *sour, u32 sz);
 extern int	_rtw_memcmp(void *dst, void *src, u32 sz);
 extern void	_rtw_memset(void *pbuf, int c, u32 sz);
 

@@ -33,10 +33,10 @@
 
 #define PLATFORM_LINUX	
 
-#define CONFIG_IOCTL_CFG80211 
+//#define CONFIG_IOCTL_CFG80211 
 
 #ifdef CONFIG_IOCTL_CFG80211
-	#define RTW_USE_CFG80211_STA_EVENT /* Indecate new sta asoc through cfg80211_new_sta */
+	//#define RTW_USE_CFG80211_STA_EVENT /* Indecate new sta asoc through cfg80211_new_sta */
 	#define CONFIG_CFG80211_FORCE_COMPATIBLE_2_6_37_UNDER
 	//#define CONFIG_DEBUG_CFG80211 
 	//#define CONFIG_DRV_ISSUE_PROV_REQ // IOT FOR S2
@@ -98,7 +98,7 @@
 #endif
 
 
-#define CONFIG_CONCURRENT_MODE 
+//#define CONFIG_CONCURRENT_MODE 
 #ifdef CONFIG_CONCURRENT_MODE
 	//#define CONFIG_HWPORT_SWAP				//Port0->Sec , Port1 -> Pri
 	#define CONFIG_RUNTIME_PORT_SWITCH
@@ -124,37 +124,34 @@
 		#define CONFIG_HOSTAPD_MLME	
 	#endif			
 	#define CONFIG_FIND_BEST_CHANNEL	
-	//#define CONFIG_NO_WIRELESS_HANDLERS	
-
 	//#define	CONFIG_AUTO_AP_MODE
-
 #endif
 
 #define CONFIG_P2P	
 #ifdef CONFIG_P2P
 	//The CONFIG_WFD is for supporting the Wi-Fi display
 	#define CONFIG_WFD
-	
-	#ifndef CONFIG_WIFI_TEST
-		#define CONFIG_P2P_REMOVE_GROUP_INFO
-	#endif
+
+	#define CONFIG_P2P_REMOVE_GROUP_INFO
+
 	//#define CONFIG_DBG_P2P
 
 	#define CONFIG_P2P_PS
-	#define CONFIG_P2P_IPS
+	//#define CONFIG_P2P_IPS
 	#define CONFIG_P2P_OP_CHK_SOCIAL_CH
 	#define CONFIG_CFG80211_ONECHANNEL_UNDER_CONCURRENT  //replace CONFIG_P2P_CHK_INVITE_CH_LIST flag
 	#define CONFIG_P2P_INVITE_IOT
 #endif
 
 //	Added by Kurt 20110511
-//#define CONFIG_TDLS	
 #ifdef CONFIG_TDLS
+	#define CONFIG_TDLS_DRIVER_SETUP
 //	#ifndef CONFIG_WFD
-//		#define CONFIG_WFD	
+//		#define CONFIG_WFD
 //	#endif
-//	#define CONFIG_TDLS_AUTOSETUP			
-//	#define CONFIG_TDLS_AUTOCHECKALIVE		
+//	#define CONFIG_TDLS_AUTOSETUP
+	#define CONFIG_TDLS_AUTOCHECKALIVE
+	#define CONFIG_TDLS_CH_SW		/* Enable "CONFIG_TDLS_CH_SW" by default, however limit it to only work in wifi logo test mode but not in normal mode currently */
 #endif
 
 //#define CONFIG_EFUSE_CONFIG_FILE
@@ -168,18 +165,6 @@
 		//#define CONFIG_LED_HANDLED_BY_CMD_THREAD
 	#endif
 #endif // CONFIG_LED
-
-//#define CONFIG_IOL
-#ifdef CONFIG_IOL
-	#define CONFIG_IOL_NEW_GENERATION
-	#define CONFIG_IOL_READ_EFUSE_MAP
-	//#define DBG_IOL_READ_EFUSE_MAP
-	//#define CONFIG_IOL_LLT
-	//#define CONFIG_IOL_EFUSE_PATCH
-	//#define CONFIG_IOL_IOREG_CFG
-	//#define CONFIG_IOL_IOREG_CFG_DBG	
-#endif
-
 
 #define USB_INTERFERENCE_ISSUE // this should be checked in all usb interface
 #define CONFIG_GLOBAL_UI_PID
@@ -212,7 +197,6 @@
 	#define CONFIG_USB_RX_AGGREGATION	
 #endif
 
-#define CONFIG_PREALLOC_RECV_SKB	
 //#define CONFIG_REDUCE_USB_TX_INT		// Trade-off: Improve performance, but may cause TX URBs blocked by USB Host/Bus driver on few platforms.
 //#define CONFIG_EASY_REPLACEMENT	
 
@@ -222,10 +206,11 @@
 //#define CONFIG_USE_USB_BUFFER_ALLOC_TX 	// Trade-off: For TX path, improve stability on some platforms, but may cause performance degrade on other platforms.
 //#define CONFIG_USE_USB_BUFFER_ALLOC_RX 	// For RX path
 #ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
-#undef CONFIG_PREALLOC_RECV_SKB
+
 #else
+	#define CONFIG_PREALLOC_RECV_SKB
 	#ifdef CONFIG_PREALLOC_RECV_SKB
-		#define CONFIG_FIX_NR_BULKIN_BUFFER		// only use USB prealloc_recv_buffer, no use alloc_skb()
+		//#define CONFIG_FIX_NR_BULKIN_BUFFER /* only use PREALLOC_RECV_SKB buffer, don't alloc skb at runtime */
 	#endif
 #endif
 
@@ -325,6 +310,7 @@
 #define RTL8723B_SUPPORT				0
 #define RTL8192E_SUPPORT				1
 #define RTL8814A_SUPPORT				0
+#define 	RTL8195A_SUPPORT				0
 
 #define RATE_ADAPTIVE_SUPPORT 			0
 #define POWER_TRAINING_ACTIVE			0
@@ -356,9 +342,9 @@
 /*
  * Debug Related Config
  */
-#define DBG	0
+#define DBG	1
 
-//#define CONFIG_DEBUG /* DBG_871X, etc... */
+#define CONFIG_DEBUG /* DBG_871X, etc... */
 //#define CONFIG_DEBUG_RTL871X /* RT_TRACE, RT_PRINT_DATA, _func_enter_, _func_exit_ */
 
 #define CONFIG_PROC_DEBUG
@@ -384,6 +370,7 @@
 //#define DBG_RX_SIGNAL_DISPLAY_SSID_MONITORED "jeff-ap"
 #define DBG_RX_SIGNAL_DISPLAY_RAW_DATA
 //#define DBG_NOISE_MONITOR
+//#define DBG_RX_COUNTER_DUMP
 
 //#define DBG_TX_POWER_IDX
 

@@ -264,6 +264,7 @@
 #define	EEPROM_TX_BBSWING_5G_8192E			0xC7
 #define	EEPROM_TX_PWR_CALIBRATE_RATE_8192E	0xC8
 #define	EEPROM_RF_ANTENNA_OPT_8192E			0xC9
+#define	EEPROM_RFE_OPTION_8192E				0xCA
 
 // RTL8192EE
 #define	EEPROM_MAC_ADDR_8192EE				0xD0
@@ -281,7 +282,7 @@
 #define 	EEPROM_LNA_TYPE_5G_8192EU           	0xBF
 
 // RTL8192ES
-#define	EEPROM_MAC_ADDR_8192ES				0x11B
+#define	EEPROM_MAC_ADDR_8192ES				0x11A
 //====================================================
 //			EEPROM/Efuse PG Offset for 8812AE/8812AU/8812AS
 //====================================================
@@ -322,6 +323,39 @@
 #define EEPROM_PA_TYPE_8812AU					0xBC
 #define EEPROM_LNA_TYPE_2G_8812AU			0xBD
 #define EEPROM_LNA_TYPE_5G_8812AU			0xBF
+
+//RTL8814AU
+#define	EEPROM_MAC_ADDR_8814AU				0xD8
+#define	EEPROM_VID_8814AU						0xD0
+#define	EEPROM_PID_8814AU						0xD2
+#define	EEPROM_PA_TYPE_8814AU				0xBC
+#define	EEPROM_LNA_TYPE_2G_8814AU			0xBD
+#define	EEPROM_LNA_TYPE_5G_8814AU			0xBF
+
+//====================================================
+//			EEPROM/Efuse PG Offset for 8814AU
+//====================================================
+#define EEPROM_TX_PWR_INX_8814				0x10
+#define EEPROM_ChannelPlan_8814				0xB8
+#define EEPROM_XTAL_8814					0xB9
+#define EEPROM_THERMAL_METER_8814			0xBA
+#define	EEPROM_IQK_LCK_8814					0xBB
+#define EEPROM_RFE_OPTION_8814				0xCA
+
+
+#define EEPROM_PA_TYPE_8814					0xBC
+#define EEPROM_LNA_TYPE_AB_2G_8814			0xBD
+#define	EEPROM_LNA_TYPE_CD_2G_8814			0xBE
+#define EEPROM_LNA_TYPE_AB_5G_8814			0xBF
+#define EEPROM_LNA_TYPE_CD_5G_8814			0xC0
+#define	EEPROM_RF_BOARD_OPTION_8814			0xC1
+#define	EEPROM_RF_BT_SETTING_8814			0xC3
+#define	EEPROM_VERSION_8814					0xC4
+#define	EEPROM_CustomID_8814				0xC5
+#define	EEPROM_TX_BBSWING_2G_8814			0xC6
+#define	EEPROM_TX_BBSWING_5G_8814			0xC7
+#define EEPROM_TRX_ANTENNA_OPTION_8814		0xC9
+#define	EEPROM_RFE_OPTION_8814				0xCA
 
 //====================================================
 //			EEPROM/Efuse PG Offset for 8821AE/8821AU/8821AS
@@ -481,6 +515,7 @@
 #define EEPROM_Default_CrystalCap_8723A		0x20
 #define EEPROM_Default_CrystalCap_88E 			0x20
 #define EEPROM_Default_CrystalCap_8812			0x20
+#define EEPROM_Default_CrystalCap_8814			0x20
 #define EEPROM_Default_CrystalCap_8192E			0x20
 #define EEPROM_Default_CrystalCap_8723B			0x20
 #define EEPROM_Default_CrystalFreq				0x0
@@ -528,6 +563,7 @@
 #define EEPROM_DEFAULT_DIFF				0XFE
 #define EEPROM_DEFAULT_CHANNEL_PLAN		0x7F
 #define EEPROM_DEFAULT_BOARD_OPTION		0x00
+#define EEPROM_DEFAULT_RFE_OPTION_8192E 0xFF
 #define EEPROM_DEFAULT_RFE_OPTION		0x04
 #define EEPROM_DEFAULT_FEATURE_OPTION	0x00
 #define EEPROM_DEFAULT_BT_OPTION			0x10
@@ -643,7 +679,7 @@ typedef	enum _BT_CoType{
 	BT_RTL8821		= 7,
 	BT_RTL8723B		= 8,
 	BT_RTL8192E		= 9,
-	BT_RTL8813A		= 10,
+	BT_RTL8814A		= 10,
 	BT_RTL8812A		= 11
 } BT_CoType, *PBT_CoType;
 

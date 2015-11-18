@@ -298,7 +298,6 @@ static void Update_ODM_ComInfo_8192e(PADAPTER	Adapter)
 		//| ODM_BB_CCK_PD
 		//| ODM_BB_PWR_SAVE
 		| ODM_BB_CFO_TRACKING
-		| ODM_MAC_EDCA_TURBO
 		| ODM_RF_CALIBRATION
 		| ODM_RF_TX_PWR_TRACK
 		| ODM_BB_PRIMARY_CCA
@@ -308,7 +307,11 @@ static void Update_ODM_ComInfo_8192e(PADAPTER	Adapter)
 
 	if (rtw_odm_adaptivity_needed(Adapter) == _TRUE)
 		pdmpriv->InitODMFlag |= ODM_BB_ADAPTIVITY;
-
+	
+	if(!Adapter->registrypriv.qos_opt_enable){
+		pdmpriv->InitODMFlag |= ODM_MAC_EDCA_TURBO;
+	}
+	
 	if(pHalData->AntDivCfg)
 		pdmpriv->InitODMFlag |= ODM_BB_ANT_DIV;
 
@@ -472,7 +475,7 @@ void rtl8192e_init_dm_priv(IN PADAPTER Adapter)
 	//_rtw_spinlock_init(&(pHalData->odm_stainfo_lock));
 	Init_ODM_ComInfo_8192e(Adapter);
 	ODM_InitAllTimers(podmpriv );	
-	ODM_InitDebugSetting(podmpriv);
+	PHYDM_InitDebugSetting(podmpriv);
 
 }
 
