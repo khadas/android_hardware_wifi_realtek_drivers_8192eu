@@ -18,6 +18,7 @@
 * 
 ******************************************************************************/
 
+/*Image2HeaderVersion: 2.11*/
 #if (RTL8192E_SUPPORT == 1)
 #ifndef __INC_MP_FW_HW_IMG_8192E_H
 #define __INC_MP_FW_HW_IMG_8192E_H
@@ -29,9 +30,20 @@
 
 void
 ODM_ReadFirmware_MP_8192E_FW_AP(
-     IN   PDM_ODM_T    pDM_Odm,
-     OUT  u1Byte       *pFirmware,
-     OUT  u4Byte       *pFirmwareSize
+	IN   PDM_ODM_T    pDM_Odm,
+	OUT  u1Byte       *pFirmware,
+	OUT  u4Byte       *pFirmwareSize
+);
+
+/******************************************************************************
+*                           FW_AP_PCIE.TXT
+******************************************************************************/
+
+void
+ODM_ReadFirmware_MP_8192E_FW_AP_PCIE(
+	IN   PDM_ODM_T    pDM_Odm,
+	OUT  u1Byte       *pFirmware,
+	OUT  u4Byte       *pFirmwareSize
 );
 
 /******************************************************************************
@@ -40,9 +52,9 @@ ODM_ReadFirmware_MP_8192E_FW_AP(
 
 void
 ODM_ReadFirmware_MP_8192E_FW_NIC(
-     IN   PDM_ODM_T    pDM_Odm,
-     OUT  u1Byte       *pFirmware,
-     OUT  u4Byte       *pFirmwareSize
+	IN   PDM_ODM_T    pDM_Odm,
+	OUT  u1Byte       *pFirmware,
+	OUT  u4Byte       *pFirmwareSize
 );
 
 /******************************************************************************
@@ -51,11 +63,11 @@ ODM_ReadFirmware_MP_8192E_FW_NIC(
 
 void
 ODM_ReadFirmware_MP_8192E_FW_WoWLAN(
-     IN   PDM_ODM_T    pDM_Odm,
-     OUT  u1Byte       *pFirmware,
-     OUT  u4Byte       *pFirmwareSize
+	IN   PDM_ODM_T    pDM_Odm,
+	OUT  u1Byte       *pFirmware,
+	OUT  u4Byte       *pFirmwareSize
 );
 
 #endif
-#endif // end of HWIMG_SUPPORT
+#endif /* end of HWIMG_SUPPORT*/
 

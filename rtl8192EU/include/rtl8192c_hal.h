@@ -21,13 +21,7 @@
 #define __RTL8192C_HAL_H__
 
 //#include "hal_com.h"
-
-#if 1
 #include "hal_data.h"
-#else
-#include "../hal/OUTSRC/odm_precomp.h"
-#endif
-
 
 #include "drv_types.h"
 #include "rtl8192c_spec.h"

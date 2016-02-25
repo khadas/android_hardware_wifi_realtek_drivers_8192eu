@@ -81,7 +81,7 @@
 //
 //-----------------------------------------------------
 #define REG_CR_8192E					0x0100
-#define REG_PBP_8192E					0x0104 // ??????
+//#define REG_PBP_8192E					0x0104 // ??????
 #define REG_PKT_BUFF_ACCESS_CTRL_8192E	0x0106 // ??????
 #define REG_TRXDMA_CTRL_8192E			0x010C
 #define REG_TRXFF_BNDY_8192E			0x0114
@@ -257,6 +257,10 @@
 #define REG_BAR_MODE_CTRL_8192E				0x04CC
 #define REG_RA_TRY_RATE_AGG_LMT_8192E		0x04CF
 #define REG_MACID_SLEEP2_8192E				0x04D0
+#define REG_HW_SEQ0_8192E						0x04D8
+#define REG_HW_SEQ1_8192E						0x04DA
+#define REG_HW_SEQ2_8192E						0x04DC
+#define REG_HW_SEQ3_8192E						0x04DE
 #define REG_TXPKTBUF_WMAC_LBK_BF_HD_8192E	0x045D // ??????
 
 
@@ -401,7 +405,7 @@
 #define	ISR_8192E							REG_HISR0_8192E
 #define	TSFR_8192E							REG_TSFTR_8192E			// Timing Sync Function Timer Register.
 					
-#define 	PBP_8192E							REG_PBP_8192E
+//#define 	PBP_8192E							REG_PBP_8192E
 
 // Redifine MACID register, to compatible prior ICs.
 #define	IDR0_8192E							REG_MACID_8192E			// MAC ID Register, Offset 0x0050-0x0053

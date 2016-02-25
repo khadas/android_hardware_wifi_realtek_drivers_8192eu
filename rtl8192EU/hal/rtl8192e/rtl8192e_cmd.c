@@ -22,7 +22,7 @@
 //#include <drv_types.h>
 #include <rtl8192e_hal.h>
 #include "hal_com_h2c.h"
-
+#include <hal_com.h>
 #define CONFIG_H2C_EF
 
 #define RTL8192E_MAX_H2C_BOX_NUMS	4
@@ -45,9 +45,8 @@ static u8 _is_fw_read_cmd_down(_adapter* padapter, u8 msgbox_num)
 		if(0 == valid ){
 			read_down = _TRUE;
 		}
-#ifdef CONFIG_WOWLAN
-		rtw_msleep_os(2);
-#endif
+		else
+			rtw_msleep_os(1);
 	}while( (!read_down) && (retry_cnts--));
 
 	return read_down;
@@ -318,13 +317,10 @@ _func_enter_;
 		}
 		else
 #endif // CONFIG_BT_COEXIST
-                {
-		        PowerState = 0x00;// AllON(0x0C), RFON(0x04), RFOFF(0x00)
-                        pwrModeByte5 = 0x40;
-                }
-#ifdef CONFIG_EXT_CLK
-		Mode |= BIT(7);//supporting 26M XTAL CLK_Request feature.
-#endif //CONFIG_EXT_CLK
+		{
+			PowerState = 0x00;// AllON(0x0C), RFON(0x04), RFOFF(0x00)
+			pwrModeByte5 = 0x40;
+		}
 	} else {
 		PowerState = 0x0C;// AllON(0x0C), RFON(0x04), RFOFF(0x00)
 		pwrModeByte5 = 0x40;
@@ -420,7 +416,7 @@ void ConstructBeacon(_adapter *padapter, u8 *pframe, u32 *pLength)
 	*(fctrl) = 0;
 
 	_rtw_memcpy(pwlanhdr->addr1, bc_addr, ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
+	_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
 	_rtw_memcpy(pwlanhdr->addr3, get_my_bssid(cur_network), ETH_ALEN);
 
 	SetSeqNum(pwlanhdr, 0/*pmlmeext->mgnt_seq*/);
@@ -528,7 +524,7 @@ void ConstructPSPoll(_adapter *padapter, u8 *pframe, u32 *pLength)
 	_rtw_memcpy(pwlanhdr->addr1, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
 
 	// TA.
-	_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
+	_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
 
 	*pLength = 16;
 }
@@ -568,19 +564,19 @@ void ConstructNullFunctionData(
 		case Ndis802_11Infrastructure:
 			SetToDs(fctrl);
 			_rtw_memcpy(pwlanhdr->addr1, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
-			_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
+			_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
 			_rtw_memcpy(pwlanhdr->addr3, StaAddr, ETH_ALEN);
 			break;
 		case Ndis802_11APMode:
 			SetFrDs(fctrl);
 			_rtw_memcpy(pwlanhdr->addr1, StaAddr, ETH_ALEN);
 			_rtw_memcpy(pwlanhdr->addr2, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
-			_rtw_memcpy(pwlanhdr->addr3, myid(&(padapter->eeprompriv)), ETH_ALEN);
+			_rtw_memcpy(pwlanhdr->addr3, adapter_mac_addr(padapter), ETH_ALEN);
 			break;
 		case Ndis802_11IBSS:
 		default:
 			_rtw_memcpy(pwlanhdr->addr1, StaAddr, ETH_ALEN);
-			_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
+			_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
 			_rtw_memcpy(pwlanhdr->addr3, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
 			break;
 	}
@@ -632,7 +628,7 @@ void ConstructProbeRsp(_adapter *padapter, u8 *pframe, u32 *pLength, u8 *StaAddr
 
 	pwlanhdr = (struct rtw_ieee80211_hdr *)pframe;
 
-	mac = myid(&(padapter->eeprompriv));
+	mac = adapter_mac_addr(padapter);
 	bssid = cur_network->MacAddress;
 
 	fctrl = &(pwlanhdr->frame_ctl);
@@ -692,7 +688,7 @@ void ConstructProbeRsp(_adapter *padapter, u8 *pframe, u32 *pLength, u8 *StaAddr
 	/* retrieve SSID IE from cur_network->Ssid */
 	{
 		u8 *ssid_ie;
-		sint ssid_ielen;
+		sint ssid_ielen = 0;
 		sint ssid_ielen_diff;
 		u8 buf[MAX_IE_SZ];
 		u8 *ies = pframe + sizeof(struct rtw_ieee80211_hdr_3addr);
@@ -792,6 +788,26 @@ CheckFwRsvdPageContent(
 }
 
 //
+// Description: Get the reserved page number in Tx packet buffer.
+// Retrun value: the page number.
+// 2012.08.09, by tynli.
+//
+u8
+GetTxBufferRsvdPageNum8192E(_adapter *padapter, bool wowlan)
+{
+	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(padapter);
+	u8	RsvdPageNum=0;
+	// default reseved 1 page for the IC type which is undefined.
+	u8	TxPageBndy= LAST_ENTRY_OF_TX_PKT_BUFFER_8192C;
+
+	rtw_hal_get_def_var(padapter, HAL_DEF_TX_PAGE_BOUNDARY, (u8 *)&TxPageBndy);
+
+	RsvdPageNum = LAST_ENTRY_OF_TX_PKT_BUFFER_8192C -TxPageBndy + 1;
+
+	return RsvdPageNum;
+}
+
+//
 // Description: Fill the reserved packets that FW will use to RSVD page.
 //			Now we just send 4 types packet to rsvd page.
 //			(1)Beacon, (2)Ps-poll, (3)Null data, (4)ProbeRsp.
@@ -802,8 +818,7 @@ CheckFwRsvdPageContent(
 //						to Hw again and set the lengh in descriptor to the real beacon lengh.
 // 2009.10.15 by tynli.
 
-#define PAGE_SIZE_92E		256
-#define RSVD_PKT_LEN_92E	(TOTAL_RSVD_PAGE_NUMBER_8192E *PAGE_SIZE_92E)
+
 
 static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 {
@@ -813,8 +828,8 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 	struct xmit_priv	*pxmitpriv;
 	struct mlme_ext_priv	*pmlmeext;
 	struct mlme_ext_info	*pmlmeinfo;
-	u32	BeaconLength, ProbeRspLength, PSPollLength;
-	u32	NullDataLength, QosNullLength, BTQosNullLength;
+	u32	BeaconLength = 0, ProbeRspLength = 0, PSPollLength = 0;
+	u32	NullDataLength = 0, QosNullLength = 0, BTQosNullLength = 0;
 	u8	*ReservedPagePacket;
 	u8	PageNum, PageNeed, TxDescLen;
 	u16	BufIndex;
@@ -857,17 +872,17 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 	pHalData->FwRsvdPageStartOffset = PageNum;
 	//printk("%s => BCN#1 PageNeed(%d) FwRsvdPageStartOffset(%d) \n",__FUNCTION__, PageNeed,pHalData->FwRsvdPageStartOffset);
 	
-	BufIndex += PageNeed*PAGE_SIZE_92E;
+	BufIndex += PageNeed*PAGE_SIZE_TX_92E;
 
 	//3 (2) ps-poll *1 page
 	RsvdPageLoc.LocPsPoll = PageNum;
 	ConstructPSPoll(padapter, &ReservedPagePacket[BufIndex], &PSPollLength);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], PSPollLength, _TRUE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], PSPollLength, _TRUE, _FALSE, _FALSE);
 
 	PageNeed = (u8)PageNum_256(TxDescLen + PSPollLength);
 	PageNum += PageNeed;
 	//printk("%s => PS-POLL- PageNeed(%d)\n",__FUNCTION__, PageNeed);
-	BufIndex += PageNeed*PAGE_SIZE_92E;
+	BufIndex += PageNeed*PAGE_SIZE_TX_92E;
 
 	//3 (3) null data * 1 page
 	RsvdPageLoc.LocNullData = PageNum;
@@ -877,12 +892,12 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&NullDataLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_FALSE, 0, 0, _FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], NullDataLength, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], NullDataLength, _FALSE, _FALSE, _FALSE);
 
 	PageNeed = (u8)PageNum_256(TxDescLen + NullDataLength);
 	PageNum += PageNeed;
 	//printk("%s => NULL data - PageNeed(%d)\n",__FUNCTION__, PageNeed);
-	BufIndex += PageNeed*PAGE_SIZE_92E;
+	BufIndex += PageNeed*PAGE_SIZE_TX_92E;
 
 	//3 (4) probe response * 1page
 	RsvdPageLoc.LocProbeRsp = PageNum;
@@ -892,12 +907,12 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&ProbeRspLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], ProbeRspLength, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], ProbeRspLength, _FALSE, _FALSE, _FALSE);
 
 	PageNeed = (u8)PageNum_256(TxDescLen + ProbeRspLength);
 	PageNum += PageNeed;
 	//printk("%s => PROB-RSP - PageNeed(%d)\n",__FUNCTION__, PageNeed);
-	BufIndex += PageNeed*PAGE_SIZE_92E;
+	BufIndex += PageNeed*PAGE_SIZE_TX_92E;
 
 	//3 (5) Qos null data
 	RsvdPageLoc.LocQosNull = PageNum;
@@ -907,7 +922,7 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&QosNullLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_TRUE, 0, 0, _FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], QosNullLength, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], QosNullLength, _FALSE, _FALSE, _FALSE);
 
 	PageNeed = (u8)PageNum_256(TxDescLen + QosNullLength);
 	PageNum += PageNeed;
@@ -927,7 +942,7 @@ static void SetFwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&BTQosNullLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_TRUE, 0, 0, _FALSE);
-	rtl8188e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], BTQosNullLength, _FALSE, _TRUE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], BTQosNullLength, _FALSE, _TRUE);
 
 	TotalPacketLen = BufIndex + BTQosNullLength;
 */
@@ -1026,7 +1041,7 @@ static void rtl8192e_set_AP_FwRsvdPagePkt(PADAPTER padapter,
 	u8	TxDescLen = TXDESC_SIZE, TxDescOffset = TXDESC_OFFSET;
 	u8	TotalPageNum=0, CurtPktPageNum=0, RsvdPageNum=0;
 	u8	currentip[4];
-	u16	BufIndex, PageSize = PAGE_SIZE_92E;
+	u16	BufIndex, PageSize = PAGE_SIZE_TX_92E;
 	u32	TotalPacketLen = 0, MaxRsvdPageBufSize=0;
 	RSVDPAGE_LOC	RsvdPageLoc;
 #ifdef DBG_CONFIG_ERROR_DETECT
@@ -1187,10 +1202,10 @@ _func_enter_;
 			if (pwrpriv->wowlan_ap_mode)
 				rtl8192e_set_AP_FwRsvdPagePkt(padapter, 0);
 			else
-				SetFwRsvdPagePkt(padapter, _FALSE);
+				rtw_hal_set_fw_rsvd_page(padapter, 0);
 #else
 			// download rsvd page.
-			SetFwRsvdPagePkt(padapter, _FALSE);
+			rtw_hal_set_fw_rsvd_page(padapter, _FALSE);
 #endif
 			DLBcnCount++;
 			do
@@ -1575,7 +1590,7 @@ static void ConstructARPResponse(
 	//SetFrameSubType(fctrl, 0);
 	SetToDs(fctrl);
 	_rtw_memcpy(pwlanhdr->addr1, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
+	_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
 	_rtw_memcpy(pwlanhdr->addr3, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
 
 	SetSeqNum(pwlanhdr, 0);
@@ -1657,7 +1672,7 @@ static void ConstructARPResponse(
 	SET_ARP_PKT_HW_ADDR_LEN(pARPRspPkt, 6);
 	SET_ARP_PKT_PROTOCOL_ADDR_LEN(pARPRspPkt, 4);
 	SET_ARP_PKT_OPERATION(pARPRspPkt, 0x0200); // ARP response
-	SET_ARP_PKT_SENDER_MAC_ADDR(pARPRspPkt, myid(&(padapter->eeprompriv)));
+	SET_ARP_PKT_SENDER_MAC_ADDR(pARPRspPkt, adapter_mac_addr(padapter));
 	SET_ARP_PKT_SENDER_IP_ADDR(pARPRspPkt, pIPAddress);
 #ifdef CONFIG_ARP_KEEP_ALIVE
 	if (rtw_gw_addr_query(padapter)==0) {
@@ -1744,7 +1759,7 @@ static void ConstructGTKResponse(
 	//SetFrameSubType(fctrl, 0);
 	SetToDs(fctrl);
 	_rtw_memcpy(pwlanhdr->addr1, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr2, myid(&(padapter->eeprompriv)), ETH_ALEN);
+	_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
 	_rtw_memcpy(pwlanhdr->addr3, get_my_bssid(&(pmlmeinfo->network)), ETH_ALEN);
 
 	SetSeqNum(pwlanhdr, 0);
@@ -1842,7 +1857,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 	u8	*ReservedPagePacket;
 	u8	TxDescLen = TXDESC_SIZE, TxDescOffset = TXDESC_OFFSET;
 	u8	TotalPageNum=0, CurtPktPageNum=0, RsvdPageNum=0;
-	u16	BufIndex, PageSize = PAGE_SIZE_92E;
+	u16	BufIndex, PageSize = PAGE_SIZE_TX_92E;
 	u32	TotalPacketLen, MaxRsvdPageBufSize=0;
 	RSVDPAGE_LOC	RsvdPageLoc;
 #ifdef CONFIG_WOWLAN	
@@ -1905,7 +1920,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 	//3 (2) ps-poll
 	RsvdPageLoc.LocPsPoll = TotalPageNum;
 	ConstructPSPoll(padapter, &ReservedPagePacket[BufIndex], &PSPollLength);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], PSPollLength, _TRUE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], PSPollLength, _TRUE, _FALSE, _FALSE);
 
 	//DBG_871X("%s(): HW_VAR_SET_TX_CMD: PS-POLL %p %d\n", 
 	//	__FUNCTION__, &ReservedPagePacket[BufIndex-TxDescLen], (PSPollLength+TxDescLen));
@@ -1924,7 +1939,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&NullDataLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_FALSE, 0, 0, _FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], NullDataLength, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], NullDataLength, _FALSE, _FALSE, _FALSE);
 
 	//DBG_871X("%s(): HW_VAR_SET_TX_CMD: NULL DATA %p %d\n", 
 	//	__FUNCTION__, &ReservedPagePacket[BufIndex-TxDescLen], (NullDataLength+TxDescLen));
@@ -1964,7 +1979,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&QosNullLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_TRUE, 0, 0, _FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], QosNullLength, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], QosNullLength, _FALSE, _FALSE, _FALSE);
 
 	//DBG_871X("%s(): HW_VAR_SET_TX_CMD: QOS NULL DATA %p %d\n", 
 	//	__FUNCTION__, &ReservedPagePacket[BufIndex-TxDescLen], (QosNullLength+TxDescLen));
@@ -1983,7 +1998,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&BTQosNullLength,
 		get_my_bssid(&pmlmeinfo->network),
 		_TRUE, 0, 0, _FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], BTQosNullLength, _FALSE, _TRUE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], BTQosNullLength, _FALSE, _TRUE, _FALSE);
 
 	//DBG_871X("%s(): HW_VAR_SET_TX_CMD: BT QOS NULL DATA %p %d\n", 
 	//	__FUNCTION__, &ReservedPagePacket[BufIndex-TxDescLen], (BTQosNullLength+TxDescLen));
@@ -2012,7 +2027,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&ARPLegnth,
 		currentip
 		);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], ARPLegnth, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], ARPLegnth, _FALSE, _FALSE, _TRUE);
 
 	//DBG_871X("%s(): HW_VAR_SET_TX_CMD: ARP RSP %p %d\n", 
 	//	__FUNCTION__, &ReservedPagePacket[BufIndex-TxDescLen], (ARPLegnth+TxDescLen));
@@ -2091,7 +2106,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 		&GTKLegnth
 		);
 
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], GTKLegnth, _FALSE, _FALSE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], GTKLegnth, _FALSE, _FALSE, _TRUE);
 #if 0
 	{
 		int gj;
@@ -2140,7 +2155,7 @@ static void rtl8192e_set_FwRsvdPagePkt(PADAPTER padapter, BOOLEAN bDLFinished)
 
 			rtl8192e_fill_fake_txdesc(padapter,
 				&ReservedPagePacket[BufIndex-TxDescLen],
-				ProbeReqLength, _FALSE, _FALSE);
+				ProbeReqLength, _FALSE, _FALSE, _FALSE);
 #ifdef CONFIG_PNO_SET_DEBUG
 	{
 			int gj;
@@ -2341,10 +2356,10 @@ _func_enter_;
 			if (pwrpriv->wowlan_ap_mode)
 				rtl8192e_set_AP_FwRsvdPagePkt(padapter, 0);
 			else
-				rtl8192e_set_FwRsvdPagePkt(padapter, 0);
+				rtw_hal_set_fw_rsvd_page(padapter, 0);
 #else
 			// download rsvd page.
-			rtl8192e_set_FwRsvdPagePkt(padapter, 0);
+			rtw_hal_set_fw_rsvd_page(padapter, 0);
 #endif
 			DLBcnCount++;
 			do
@@ -2978,6 +2993,14 @@ C2HContentParsing8192E(
 	case C2H_8192E_RA_RPT:
 		C2HRaReportHandler_8192E(Adapter, tmpBuf, c2hCmdLen); //for tx power tracking
 		break;
+
+#ifdef CONFIG_FW_C2H_DEBUG
+	case C2H_8192E_FW_DEBUG:
+		DBG_871X("[C2H], 8192E_FW_DEBUG.\n");
+		Debug_FwC2H(Adapter, tmpBuf, c2hCmdLen);
+		break;
+#endif /* CONFIG_FW_C2H_DEBUG*/
+
 	
 	default:
 		break;
@@ -3095,7 +3118,7 @@ void ConstructBtNullFunctionData(
 
 	if (NULL == StaAddr)
 	{
-		_rtw_memcpy(bssid, myid(&padapter->eeprompriv), ETH_ALEN);
+		_rtw_memcpy(bssid, adapter_mac_addr(padapter), ETH_ALEN);
 		StaAddr = bssid;
 	}
 	
@@ -3108,8 +3131,8 @@ void ConstructBtNullFunctionData(
 	
 	SetFrDs(fctrl);
 	_rtw_memcpy(pwlanhdr->addr1, StaAddr, ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr2, myid(&padapter->eeprompriv), ETH_ALEN);
-	_rtw_memcpy(pwlanhdr->addr3, myid(&padapter->eeprompriv), ETH_ALEN);
+	_rtw_memcpy(pwlanhdr->addr2, adapter_mac_addr(padapter), ETH_ALEN);
+	_rtw_memcpy(pwlanhdr->addr3, adapter_mac_addr(padapter), ETH_ALEN);
 
 	SetDuration(pwlanhdr, 0);
 	SetSeqNum(pwlanhdr, 0);
@@ -3201,7 +3224,7 @@ static void SetFwRsvdPagePkt_BTCoex(PADAPTER padapter)
 		&BTQosNullLength,
 		NULL,
 		_TRUE, 0, 0, _FALSE);
-	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], BTQosNullLength, _FALSE, _TRUE);
+	rtl8192e_fill_fake_txdesc(padapter, &ReservedPagePacket[BufIndex-TxDescLen], BTQosNullLength, _FALSE, _TRUE, _FALSE);
 
 	//DBG_871X("%s(): HW_VAR_SET_TX_CMD: BT QOS NULL DATA %p %d\n", 
 	//	__FUNCTION__, &ReservedPagePacket[BufIndex-TxDescLen], (BTQosNullLength+TxDescLen));

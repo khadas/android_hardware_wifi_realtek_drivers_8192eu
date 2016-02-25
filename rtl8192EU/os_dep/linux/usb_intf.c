@@ -305,6 +305,7 @@ static struct usb_device_id rtw_usb_id_tbl[] ={
 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x0821),.driver_info = RTL8821},/* Default ID */
 	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8822),.driver_info = RTL8821},/* Default ID */
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0x0820,0xff,0xff,0xff),.driver_info = RTL8821}, /* 8821AU */
+	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0x0823,0xff,0xff,0xff),.driver_info = RTL8821}, /* 8821AU */
 	/*=== Customer ID ===*/
 	{USB_DEVICE(0x7392, 0xA811),.driver_info = RTL8821}, /* Edimax - Edimax */
 	{USB_DEVICE(0x04BB, 0x0953),.driver_info = RTL8821}, /* I-O DATA - Edimax */
@@ -324,6 +325,11 @@ static struct usb_device_id rtw_usb_id_tbl[] ={
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB720,0xff,0xff,0xff),.driver_info = RTL8723B}, /* 8723BU 1*1 */
 	//{USB_DEVICE(USB_VENDER_ID_REALTEK, 0xB720),.driver_info = RTL8723B}, /* 8723BU */
 #endif
+
+#ifdef CONFIG_RTL8814A
+	
+	{USB_DEVICE(USB_VENDER_ID_REALTEK, 0x8813),.driver_info = RTL8814A},
+#endif /* CONFIG_RTL8814A */
 	{}	/* Terminating entry */
 };
 
@@ -671,6 +677,33 @@ _func_enter_;
 _func_exit_;
 }
 
+static int usb_reprobe_to_usb3(PADAPTER Adapter)
+{
+	struct registry_priv  *registry_par = &Adapter->registrypriv;
+	int ret = _FALSE;
+	
+	if (registry_par->switch_usb3 == _TRUE) {
+		if (IS_HIGH_SPEED_USB(Adapter)) {
+			if ((rtw_read8(Adapter, 0x74) & (BIT(2)|BIT(3))) != BIT(3)) {
+				rtw_write8(Adapter, 0x74, 0x8);
+				rtw_write8(Adapter, 0x70, 0x2);
+				rtw_write8(Adapter, 0x3e, 0x1);
+				rtw_write8(Adapter, 0x3d, 0x3);
+				/* usb disconnect */
+				rtw_write8(Adapter, 0x5, 0x80);
+				ret = _TRUE;
+			}
+			
+		} else if (IS_SUPER_SPEED_USB(Adapter))	{
+			rtw_write8(Adapter, 0x70, rtw_read8(Adapter, 0x70) & (~BIT(1)));
+			rtw_write8(Adapter, 0x3e, rtw_read8(Adapter, 0x3e) & (~BIT(0)));
+		}
+	}
+
+	return ret;
+}
+
+
 static void rtw_decide_chip_type_by_usb_info(_adapter *padapter, const struct usb_device_id *pdid)
 {
 	padapter->chip_type = pdid->driver_info;
@@ -709,6 +742,11 @@ static void rtw_decide_chip_type_by_usb_info(_adapter *padapter, const struct us
 	if(padapter->chip_type == RTL8723B)
 		rtl8723bu_set_hw_type(padapter);
 	#endif
+	
+	#ifdef CONFIG_RTL8814A
+	if(padapter->chip_type == RTL8814A)
+		rtl8814au_set_hw_type(padapter);
+	#endif /* CONFIG_RTL8814A */
 
 }
 void rtw_set_hal_ops(_adapter *padapter)
@@ -749,6 +787,10 @@ void rtw_set_hal_ops(_adapter *padapter)
 	if(padapter->chip_type == RTL8723B)
 		rtl8723bu_set_hal_ops(padapter);
 	#endif
+	#ifdef CONFIG_RTL8814A
+	if(padapter->chip_type == RTL8814A)
+		rtl8814au_set_hal_ops(padapter);
+	#endif /* CONFIG_RTL8814A */
 }
 
 void usb_set_intf_ops(_adapter *padapter,struct _io_ops *pops)
@@ -787,6 +829,10 @@ void usb_set_intf_ops(_adapter *padapter,struct _io_ops *pops)
 	if(padapter->chip_type == RTL8723B)
 		rtl8723bu_set_intf_ops(pops);
 	#endif
+	
+	#ifdef CONFIG_RTL8814A
+	rtl8814au_set_intf_ops(pops);
+	#endif /* CONFIG_RTL8814A */
 }
 
 
@@ -959,10 +1005,7 @@ int rtw_hw_resume(_adapter *padapter)
 	netif_device_attach(pnetdev);
 	netif_carrier_on(pnetdev);
 
-	if(!rtw_netif_queue_stopped(pnetdev))
-      		rtw_netif_start_queue(pnetdev);
-	else
-		rtw_netif_wake_queue(pnetdev);
+	rtw_netif_wake_queue(pnetdev);
 
 	pwrpriv->bkeepfwalive = _FALSE;
 	pwrpriv->brfoffbyhw = _FALSE;
@@ -1322,7 +1365,7 @@ _adapter *rtw_usb_if1_init(struct dvobj_priv *dvobj,
 	padapter->iface_type = IFACE_PORT0;
 	#else
 	padapter->iface_type = IFACE_PORT1;
-	#endif	
+	#endif
 #endif
 
 	//step 1-1., decide the chip_type via driver_info
@@ -1425,9 +1468,9 @@ _adapter *rtw_usb_if1_init(struct dvobj_priv *dvobj,
 #endif
 
 	// set mac addr
-	rtw_macaddr_cfg(padapter->eeprompriv.mac_addr);
+	rtw_macaddr_cfg(adapter_mac_addr(padapter), padapter->eeprompriv.mac_addr);
 #ifdef CONFIG_P2P	
-	rtw_init_wifidirect_addrs(padapter, padapter->eeprompriv.mac_addr, padapter->eeprompriv.mac_addr);
+	rtw_init_wifidirect_addrs(padapter, adapter_mac_addr(padapter), adapter_mac_addr(padapter));
 #endif // CONFIG_P2P
 	DBG_871X("bDriverStopped:%d, bSurpriseRemoved:%d, bup:%d, hw_init_completed:%d\n"
 		, padapter->bDriverStopped
@@ -1439,8 +1482,8 @@ _adapter *rtw_usb_if1_init(struct dvobj_priv *dvobj,
 	status = _SUCCESS;
 
 free_hal_data:
-	if(status != _SUCCESS && padapter->HalData)
-		rtw_mfree(padapter->HalData, sizeof(*(padapter->HalData)));
+	if (status != _SUCCESS && padapter->HalData)
+		rtw_hal_free_data(padapter);
 free_wdev:
 	if(status != _SUCCESS) {
 		#ifdef CONFIG_IOCTL_CFG80211
@@ -1548,7 +1591,10 @@ static int rtw_drv_init(struct usb_interface *pusb_intf, const struct usb_device
 		DBG_871X("rtw_usb_if1_init Failed!\n");
 		goto free_dvobj;
 	}
-
+	
+	if (usb_reprobe_to_usb3(if1) == _TRUE)
+		goto free_if1;
+	
 #ifdef CONFIG_CONCURRENT_MODE
 	if((if2 = rtw_drv_if2_init(if1, usb_set_intf_ops)) == NULL) {
 		goto free_if1;
@@ -1577,9 +1623,8 @@ static int rtw_drv_init(struct usb_interface *pusb_intf, const struct usb_device
 #endif
 
 	//dev_alloc_name && register_netdev
-	if((status = rtw_drv_register_netdev(if1)) != _SUCCESS) {
+	if (rtw_drv_register_netdev(if1) != _SUCCESS)
 		goto free_if2;
-	}
 
 #ifdef CONFIG_HOSTAPD_MLME
 	hostapd_mode_init(if1);
@@ -1594,6 +1639,11 @@ static int rtw_drv_init(struct usb_interface *pusb_intf, const struct usb_device
 
 	status = _SUCCESS;
 
+#if 0 /* not used now */
+unregister_ndevs:
+	if (status != _SUCCESS)
+		rtw_unregister_netdevs(dvobj);
+#endif
 free_if2:
 	if(status != _SUCCESS && if2) {
 		#ifdef CONFIG_CONCURRENT_MODE

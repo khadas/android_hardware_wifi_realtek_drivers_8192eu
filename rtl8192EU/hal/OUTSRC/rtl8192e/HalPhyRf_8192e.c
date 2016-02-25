@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #include "Mp_Precomp.h"
-#include "../odm_precomp.h"
+#include "../phydm_precomp.h"
 
 
 
@@ -1920,8 +1920,9 @@ phy_IQCalibrate_8192E(
 	u4Byte	IQK_BB_REG_92C[IQK_BB_REG_NUM] = {
 							rOFDM0_TRxPathEnable, 		rOFDM0_TRMuxPar,	
 							rFPGA0_XCD_RFInterfaceSW,	rConfig_AntA,	rConfig_AntB,
-							rFPGA0_XAB_RFInterfaceSW,	rFPGA0_XA_RFInterfaceOE,	
-							rFPGA0_XB_RFInterfaceOE,	 rCCK0_AFESetting	
+							0x92c,	0x930,
+							0x938,	rCCK0_AFESetting
+
 							};	
 
 	u4Byte	retryCount = 2;
@@ -2002,6 +2003,23 @@ phy_IQCalibrate_8192E(
 	ODM_SetBBReg(pDM_Odm, rOFDM0_TRMuxPar, bMaskDWord, 0x000800e4);
 	ODM_SetBBReg(pDM_Odm, rFPGA0_XCD_RFInterfaceSW, bMaskDWord, 0x55204200);
 
+	if ((pDM_Odm->ExtLNA) && !(pDM_Odm->ExtPA)) { /* external LNA / external PA = 1 /0 */
+		/*PAPE force to high*/
+		/*just for high power with external LNA, without external PA*/
+		ODM_SetBBReg(pDM_Odm, 0x930, 0xf, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x930, 0x0f000000, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x938, 0xf, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x938, 0x0f000000, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x92c, bMaskDWord, 0x00410041);
+	} else if (pDM_Odm->ExtPA) { /* external PA = 1*/
+		/*PAPE force to low*/
+		/*just for high power with external PA, without external LNA*/
+		ODM_SetBBReg(pDM_Odm, 0x930, 0xf, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x930, 0x0f000000, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x938, 0xf, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x938, 0x0f000000, 0x7);
+		ODM_SetBBReg(pDM_Odm, 0x92c, bMaskDWord, 0x00000000);
+	}
 
 	// IQ calibration setting
 //	ODM_RT_TRACE(pDM_Odm,ODM_COMP_CALIBRATION, ODM_DBG_LOUD, ("IQK setting!\n"));		

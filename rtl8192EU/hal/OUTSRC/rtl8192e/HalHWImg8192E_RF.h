@@ -18,6 +18,7 @@
 * 
 ******************************************************************************/
 
+/*Image2HeaderVersion: 2.14*/
 #if (RTL8192E_SUPPORT == 1)
 #ifndef __INC_MP_RF_HW_IMG_8192E_H
 #define __INC_MP_RF_HW_IMG_8192E_H
@@ -28,7 +29,7 @@
 ******************************************************************************/
 
 void
-ODM_ReadAndConfig_MP_8192E_RadioA( // TC: Test Chip, MP: MP Chip
+ODM_ReadAndConfig_MP_8192E_RadioA(/* TC: Test Chip, MP: MP Chip*/
 	IN   PDM_ODM_T  pDM_Odm
 );
 u4Byte ODM_GetVersion_MP_8192E_RadioA(void);
@@ -38,7 +39,7 @@ u4Byte ODM_GetVersion_MP_8192E_RadioA(void);
 ******************************************************************************/
 
 void
-ODM_ReadAndConfig_MP_8192E_RadioB( // TC: Test Chip, MP: MP Chip
+ODM_ReadAndConfig_MP_8192E_RadioB(/* TC: Test Chip, MP: MP Chip*/
 	IN   PDM_ODM_T  pDM_Odm
 );
 u4Byte ODM_GetVersion_MP_8192E_RadioB(void);
@@ -48,7 +49,7 @@ u4Byte ODM_GetVersion_MP_8192E_RadioB(void);
 ******************************************************************************/
 
 void
-ODM_ReadAndConfig_MP_8192E_TxPowerTrack_AP( // TC: Test Chip, MP: MP Chip
+ODM_ReadAndConfig_MP_8192E_TxPowerTrack_AP(/* TC: Test Chip, MP: MP Chip*/
 	IN   PDM_ODM_T  pDM_Odm
 );
 u4Byte ODM_GetVersion_MP_8192E_TxPowerTrack_AP(void);
@@ -58,17 +59,27 @@ u4Byte ODM_GetVersion_MP_8192E_TxPowerTrack_AP(void);
 ******************************************************************************/
 
 void
-ODM_ReadAndConfig_MP_8192E_TxPowerTrack_PCIE( // TC: Test Chip, MP: MP Chip
+ODM_ReadAndConfig_MP_8192E_TxPowerTrack_PCIE(/* TC: Test Chip, MP: MP Chip*/
 	IN   PDM_ODM_T  pDM_Odm
 );
 u4Byte ODM_GetVersion_MP_8192E_TxPowerTrack_PCIE(void);
+
+/******************************************************************************
+*                           TxPowerTrack_SDIO.TXT
+******************************************************************************/
+
+void
+ODM_ReadAndConfig_MP_8192E_TxPowerTrack_SDIO(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8192E_TxPowerTrack_SDIO(void);
 
 /******************************************************************************
 *                           TxPowerTrack_USB.TXT
 ******************************************************************************/
 
 void
-ODM_ReadAndConfig_MP_8192E_TxPowerTrack_USB( // TC: Test Chip, MP: MP Chip
+ODM_ReadAndConfig_MP_8192E_TxPowerTrack_USB(/* TC: Test Chip, MP: MP Chip*/
 	IN   PDM_ODM_T  pDM_Odm
 );
 u4Byte ODM_GetVersion_MP_8192E_TxPowerTrack_USB(void);
@@ -78,11 +89,21 @@ u4Byte ODM_GetVersion_MP_8192E_TxPowerTrack_USB(void);
 ******************************************************************************/
 
 void
-ODM_ReadAndConfig_MP_8192E_TXPWR_LMT( // TC: Test Chip, MP: MP Chip
+ODM_ReadAndConfig_MP_8192E_TXPWR_LMT(/* TC: Test Chip, MP: MP Chip*/
 	IN   PDM_ODM_T  pDM_Odm
 );
 u4Byte ODM_GetVersion_MP_8192E_TXPWR_LMT(void);
 
+/******************************************************************************
+*                           TXPWR_LMT_8192E_SAR_5mm.TXT
+******************************************************************************/
+
+void
+ODM_ReadAndConfig_MP_8192E_TXPWR_LMT_8192E_SAR_5mm(/* TC: Test Chip, MP: MP Chip*/
+	IN   PDM_ODM_T  pDM_Odm
+);
+u4Byte ODM_GetVersion_MP_8192E_TXPWR_LMT_8192E_SAR_5mm(void);
+
 #endif
-#endif // end of HWIMG_SUPPORT
+#endif /* end of HWIMG_SUPPORT*/
 

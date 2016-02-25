@@ -1177,6 +1177,20 @@ phy_SpurCalibration_8192E(
 	PHY_SetRFReg(Adapter, ODM_RF_PATH_A, RF_CHNLBW, bRFRegOffsetMask, reg0x18); //restore chnl
 
 }
+
+void PHY_SpurCalibration_8192E(IN PADAPTER Adapter)
+{
+	if(rtw_read32(Adapter, REG_SYS_CFG1_8192E) & BIT_SPSLDO_SEL){
+		//LDO
+		phy_SpurCalibration_8192E(Adapter,PLL_RESET);
+	}else{ 
+		//SPS - 4OM
+		phy_SpurCalibration_8192E(Adapter,AFE_PHASE_SEL);
+		// todo SPS-25M -check
+	}
+}
+
+
 #ifdef CONFIG_SPUR_CAL_NBI
 // to eliminate the 2480MHz spur for 92E suggest by James
 void 
@@ -1235,6 +1249,12 @@ phy_SwChnlAndSetBwMode8192E(
 			pHalData->bSetChnlBW,
 			pHalData->CurrentChannelBW);
 
+#ifdef CONFIG_TDLS
+#ifdef CONFIG_TDLS_CH_SW
+		if(Adapter->tdlsinfo.chsw_info.dump_stack == _TRUE)
+			dump_stack();
+#endif
+#endif /* CONFIG_TDLS */
 	}
 
 	if((Adapter->bDriverStopped) || (Adapter->bSurpriseRemoved))
@@ -1257,9 +1277,14 @@ phy_SwChnlAndSetBwMode8192E(
 #ifdef CONFIG_SPUR_CAL_NBI
 	phy_SpurCalibration_8192E_NBI(Adapter);
 #endif
-
-
-	PHY_SetTxPowerLevel8192E(Adapter, pHalData->CurrentChannel);
+	
+#ifdef CONFIG_TDLS
+#ifdef CONFIG_TDLS_CH_SW
+	/* It takes too much time of setting tx power, influence channel switch */
+	if((ATOMIC_READ(&Adapter->tdlsinfo.chsw_info.chsw_on) == _FALSE))
+#endif
+#endif /* CONFIG_TDLS */
+		PHY_SetTxPowerLevel8192E(Adapter, pHalData->CurrentChannel);
 }
 
 VOID
@@ -1638,3 +1663,41 @@ PHY_SetBWMode8192E(
 }
 
 #endif
+VOID
+PHY_SetRFEReg_8192E(
+	IN PADAPTER		Adapter
+)
+{
+	u8			u1tmp = 0;
+	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
+
+	if ((pHalData->ExternalPA_2G == 0) && (pHalData->ExternalLNA_2G == 0))
+		return;
+
+	switch (pHalData->RFEType) {
+	case 0:
+			PHY_SetBBReg(Adapter, BIT_REG_LED_CFG_8192E, bMaskByte2, 0x62);/* Reg[4E] = 0x62 */
+			PHY_SetBBReg(Adapter, BIT_REG_LED_CFG_8192E, bMaskByte3, 0x0);/* Reg[4F] = 0x0 */
+			PHY_SetBBReg(Adapter, 0x930, bMaskDWord, 0x00540000);
+			PHY_SetBBReg(Adapter, 0x934, bMaskDWord, 0x0);
+			PHY_SetBBReg(Adapter, 0x938, bMaskDWord, 0x00000540);
+			PHY_SetBBReg(Adapter, 0x93C, bMaskDWord, 0x0);
+			PHY_SetBBReg(Adapter, 0x940, bMaskDWord, 0x00000015);
+			PHY_SetBBReg(Adapter, 0x944, bMaskDWord, 0x0000ffff);
+			break;
+	case 1:
+			PHY_SetBBReg(Adapter, BIT_REG_LED_CFG_8192E, bMaskByte2, 0x62);/* Reg[4E] = 0x62 */
+			PHY_SetBBReg(Adapter, BIT_REG_LED_CFG_8192E, bMaskByte3, 0x70);/* Reg[4F] = 0x70 */
+			PHY_SetBBReg(Adapter, 0x930, bMaskDWord, 0x00005000);
+			PHY_SetBBReg(Adapter, 0x934, bMaskDWord, 0x00004000);
+			PHY_SetBBReg(Adapter, 0x938, bMaskDWord, 0x00000540);
+			PHY_SetBBReg(Adapter, 0x93C, bMaskDWord, 0x0);
+			PHY_SetBBReg(Adapter, 0x940, bMaskDWord, 0x00000015);
+			PHY_SetBBReg(Adapter, 0x944, bMaskDWord, 0x0000083F);
+			break;
+
+	default:
+			break;
+	}
+	
+}
