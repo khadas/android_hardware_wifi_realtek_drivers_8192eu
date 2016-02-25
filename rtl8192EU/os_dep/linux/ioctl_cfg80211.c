@@ -4527,6 +4527,102 @@ static int	cfg80211_rtw_set_channel(struct wiphy *wiphy
 	return 0;
 }
 
+static int cfg80211_rtw_set_monitor_channel(struct wiphy *wiphy
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+											, struct cfg80211_chan_def *chandef
+#else
+											, struct ieee80211_channel *chan
+											, enum nl80211_channel_type channel_type
+#endif
+										   )
+{
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+	struct ieee80211_channel *chan = chandef->chan;
+#endif
+
+	_adapter *padapter = wiphy_to_adapter(wiphy);
+	int target_channal = chan->hw_value;
+	int target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+	int target_width = CHANNEL_WIDTH_20;
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+#ifdef CONFIG_DEBUG_CFG80211
+	DBG_8192C("center_freq %u Mhz ch %u width %u freq1 %u freq2 %u\n"
+			  , chan->center_freq
+			  , chan->hw_value
+			  , chandef->width
+			  , chandef->center_freq1
+			  , chandef->center_freq2);
+#endif /* CONFIG_DEBUG_CFG80211 */
+
+	switch (chandef->width) {
+	case NL80211_CHAN_WIDTH_20_NOHT:
+	case NL80211_CHAN_WIDTH_20:
+		target_width = CHANNEL_WIDTH_20;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+	case NL80211_CHAN_WIDTH_40:
+		target_width = CHANNEL_WIDTH_40;
+		if (chandef->center_freq1 > chan->center_freq)
+			target_offset = HAL_PRIME_CHNL_OFFSET_LOWER;
+		else
+			target_offset = HAL_PRIME_CHNL_OFFSET_UPPER;
+		break;
+	case NL80211_CHAN_WIDTH_80:
+		target_width = CHANNEL_WIDTH_80;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+	case NL80211_CHAN_WIDTH_80P80:
+		target_width = CHANNEL_WIDTH_80_80;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+	case NL80211_CHAN_WIDTH_160:
+		target_width = CHANNEL_WIDTH_160;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
+	case NL80211_CHAN_WIDTH_5:
+	case NL80211_CHAN_WIDTH_10:
+#endif
+	default:
+		target_width = CHANNEL_WIDTH_20;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+	}
+#else
+#ifdef CONFIG_DEBUG_CFG80211
+	DBG_8192C("center_freq %u Mhz ch %u channel_type %u\n"
+			  , chan->center_freq
+			  , chan->hw_value
+			  , channel_type);
+#endif /* CONFIG_DEBUG_CFG80211 */
+
+	switch (channel_type) {
+	case NL80211_CHAN_NO_HT:
+	case NL80211_CHAN_HT20:
+		target_width = CHANNEL_WIDTH_20;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+	case NL80211_CHAN_HT40MINUS:
+		target_width = CHANNEL_WIDTH_40;
+		target_offset = HAL_PRIME_CHNL_OFFSET_UPPER;
+		break;
+	case NL80211_CHAN_HT40PLUS:
+		target_width = CHANNEL_WIDTH_40;
+		target_offset = HAL_PRIME_CHNL_OFFSET_LOWER;
+		break;
+	default:
+		target_width = CHANNEL_WIDTH_20;
+		target_offset = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+		break;
+	}
+#endif
+
+	set_channel_bwmode(padapter, target_channal, target_offset, target_width);
+
+	return 0;
+}
+
 static int	cfg80211_rtw_auth(struct wiphy *wiphy, struct net_device *ndev,
 			struct cfg80211_auth_request *req)
 {
@@ -6195,7 +6291,7 @@ static void rtw_cfg80211_preinit_wiphy(_adapter *padapter, struct wiphy *wiphy)
 								| BIT(NL80211_IFTYPE_ADHOC)
 #ifdef CONFIG_AP_MODE
 								| BIT(NL80211_IFTYPE_AP)
-								#ifndef CONFIG_RADIO_WORK
+								#ifdef CONFIG_WIFI_MONITOR
 								| BIT(NL80211_IFTYPE_MONITOR)
 								#endif
 #endif
@@ -6212,7 +6308,7 @@ static void rtw_cfg80211_preinit_wiphy(_adapter *padapter, struct wiphy *wiphy)
 #endif		
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,0,0))
-	#ifndef CONFIG_RADIO_WORK
+	#ifdef CONFIG_WIFI_MONITOR
 	wiphy->software_iftypes |= BIT(NL80211_IFTYPE_MONITOR);
 	#endif
 #endif
@@ -6326,6 +6422,10 @@ static struct cfg80211_ops rtw_cfg80211_ops = {
 	//.auth = cfg80211_rtw_auth,
 	//.assoc = cfg80211_rtw_assoc,	
 #endif //CONFIG_AP_MODE
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
+	.set_monitor_channel = cfg80211_rtw_set_monitor_channel,
+#endif
 
 #ifdef CONFIG_P2P
 	.remain_on_channel = cfg80211_rtw_remain_on_channel,

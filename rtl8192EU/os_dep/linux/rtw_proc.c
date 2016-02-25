@@ -766,6 +766,9 @@ const struct rtw_proc_hdl adapter_proc_hdls [] = {
 	{"tdls_info", proc_get_tdls_info, NULL},
 #endif
 	{"monitor", proc_get_monitor, proc_set_monitor},
+#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
+	{"rtkm_info", proc_get_rtkm_info, NULL}
+#endif
 };
 
 const int adapter_proc_hdls_num = sizeof(adapter_proc_hdls) / sizeof(struct rtw_proc_hdl);

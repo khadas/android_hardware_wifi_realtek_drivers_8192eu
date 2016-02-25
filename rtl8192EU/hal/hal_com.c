@@ -6199,6 +6199,26 @@ void rtw_set_usb_agg_by_mode(_adapter *padapter, u8 cur_wireless_mode)
 	if(cur_wireless_mode < WIRELESS_11_24N 
 		&& cur_wireless_mode > 0) //ABG mode
 	{
+#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
+		u32 remainder = 0;
+		u8 quotient = 0;
+
+		remainder = MAX_RECVBUF_SZ % (4*1024); 
+		quotient = (u8)(MAX_RECVBUF_SZ >> 12); 
+		
+		if (quotient > 5) {
+			pHalData->RegAcUsbDmaSize = 0x6;
+			pHalData->RegAcUsbDmaTime = 0x10;
+		} else {
+			if (remainder >= 2048) {
+				pHalData->RegAcUsbDmaSize = quotient;
+				pHalData->RegAcUsbDmaTime = 0x10;
+			} else {
+				pHalData->RegAcUsbDmaSize = (quotient-1);
+				pHalData->RegAcUsbDmaTime = 0x10;
+			}
+		}
+#else /* !CONFIG_PREALLOC_RX_SKB_BUFFER */
 		if(0x6 != pHalData->RegAcUsbDmaSize || 0x10 !=pHalData->RegAcUsbDmaTime)
 		{
 			pHalData->RegAcUsbDmaSize = 0x6;
@@ -6206,11 +6226,32 @@ void rtw_set_usb_agg_by_mode(_adapter *padapter, u8 cur_wireless_mode)
 			rtw_write16(padapter, REG_RXDMA_AGG_PG_TH,
 				pHalData->RegAcUsbDmaSize | (pHalData->RegAcUsbDmaTime<<8));
 		}
+#endif /* CONFIG_PREALLOC_RX_SKB_BUFFER */
 					
 	}
 	else if(cur_wireless_mode >= WIRELESS_11_24N
 			&& cur_wireless_mode <= WIRELESS_MODE_MAX)//N AC mode
 	{
+#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
+		u32 remainder = 0;
+		u8 quotient = 0;
+
+		remainder = MAX_RECVBUF_SZ % (4*1024); 
+		quotient = (u8)(MAX_RECVBUF_SZ >> 12); 
+		
+		if (quotient > 5) {
+			pHalData->RegAcUsbDmaSize = 0x5;
+			pHalData->RegAcUsbDmaTime = 0x20;
+		} else {
+			if (remainder >= 2048) {
+				pHalData->RegAcUsbDmaSize = quotient;
+				pHalData->RegAcUsbDmaTime = 0x10;
+			} else {
+				pHalData->RegAcUsbDmaSize = (quotient-1);
+				pHalData->RegAcUsbDmaTime = 0x10;
+			}
+		}
+#else /* !CONFIG_PREALLOC_RX_SKB_BUFFER */
 		if(0x5 != pHalData->RegAcUsbDmaSize || 0x20 !=pHalData->RegAcUsbDmaTime)
 		{
 			pHalData->RegAcUsbDmaSize = 0x5;
@@ -6218,6 +6259,7 @@ void rtw_set_usb_agg_by_mode(_adapter *padapter, u8 cur_wireless_mode)
 			rtw_write16(padapter, REG_RXDMA_AGG_PG_TH,
 				pHalData->RegAcUsbDmaSize | (pHalData->RegAcUsbDmaTime<<8));
 		}
+#endif /* CONFIG_PREALLOC_RX_SKB_BUFFER */
 
 	}
 	else

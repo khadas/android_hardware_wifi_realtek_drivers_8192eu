@@ -151,13 +151,34 @@ void rtl8192eu_interface_configure(_adapter *padapter)
 	}
 	else if(pHalData->UsbRxAggMode == USB_RX_AGG_USB)
 	{
-#ifdef CONFIG_PLATFORM_HISILICON
+
+#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
+		u32 remainder = 0;
+		u8 quotient = 0;
+
+		remainder = MAX_RECVBUF_SZ % (4*1024); 
+		quotient = (u8)(MAX_RECVBUF_SZ >> 12); 
+		
+		if (quotient > 5) {
+			pHalData->RegAcUsbDmaSize = 0x5;
+			pHalData->RegAcUsbDmaTime = 0x20;
+		} else {
+			if (remainder >= 2048) {
+				pHalData->RegAcUsbDmaSize = quotient;
+				pHalData->RegAcUsbDmaTime = 0x10;
+			} else {
+				pHalData->RegAcUsbDmaSize = (quotient-1);
+				pHalData->RegAcUsbDmaTime = 0x10;
+			}
+		}
+
+#elif defined(CONFIG_PLATFORM_HISILICON)
 		pHalData->RegAcUsbDmaSize = 3; /*unit 4k for USB aggregation mode */
 		pHalData->RegAcUsbDmaTime = 8; /*unit 32us*/
 #else
 		pHalData->RegAcUsbDmaSize = 6; /* unit 4k for USB aggregation mode */
 		pHalData->RegAcUsbDmaTime = 0x20; /* unit 32us */
-#endif	
+#endif	/* CONFIG_PREALLOC_RX_SKB_BUFFER */
 	}
 #endif
 
@@ -264,15 +285,17 @@ static u32 _InitPowerOn_8192EU(_adapter *padapter)
 		//SPS
 		//0x7C [6] = 1¡¦b0 (IC default, 0x83)
 	
-#ifndef CONFIG_PLATFORM_HISILICON
+
 		/* 0x14[23:20]=b¡¦0101 (raise 1.2V voltage)
 		   u1Byte	tmp1Byte = PlatformEFIORead1Byte(Adapter,0x16);
 		   PlatformEFIOWrite1Byte(Adapter,0x16,tmp1Byte |BIT4|BIT6); */
+		u32 voltage = rtw_read32(padapter , REG_SYS_SWR_CTRL2_8192E);
 
-		u32 voltage = (rtw_read32(padapter, REG_SYS_SWR_CTRL2_8192E) & 0xFF0FFFFF) | (0x05 << 20);
-
+		if (((voltage & 0x00F00000) >> 20) == 0x4) {
+			voltage = (voltage & 0xFF0FFFFF) | (0x05 << 20);
 		rtw_write32(padapter, REG_SYS_SWR_CTRL2_8192E, voltage);
-#endif	/*CONFIG_PLATFORM_HISILICON*/
+		}
+
 		rtw_write8(padapter, REG_LDO_SWR_CTRL, 0x83);
 	}
 

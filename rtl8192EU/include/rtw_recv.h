@@ -45,8 +45,12 @@
 			#define NR_RECVBUFF (8)
 		#endif	
 	#endif //CONFIG_SINGLE_RECV_BUF
+	#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
+		#define NR_PREALLOC_RECV_SKB (rtw_rtkm_get_nr_recv_skb()>>1)
+	#else /*!CONFIG_PREALLOC_RX_SKB_BUFFER */
+		#define NR_PREALLOC_RECV_SKB 8
+	#endif /* CONFIG_PREALLOC_RX_SKB_BUFFER */
 
-	#define NR_PREALLOC_RECV_SKB (8)	
 #endif
 
 #define NR_RECVFRAME 256

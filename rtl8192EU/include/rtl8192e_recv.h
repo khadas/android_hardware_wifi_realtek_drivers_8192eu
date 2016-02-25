@@ -29,8 +29,8 @@
 	#ifdef CONFIG_MINIMAL_MEMORY_USAGE
 		#define MAX_RECVBUF_SZ (4000) // about 4K
 	#else
-		#ifdef CONFIG_PLATFORM_MSTAR
-			#define MAX_RECVBUF_SZ (8192) // 8K
+		#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
+			#define MAX_RECVBUF_SZ (rtw_rtkm_get_buff_size()) /*depend rtkm*/
 		#elif defined(CONFIG_PLATFORM_HISILICON)
 			#define MAX_RECVBUF_SZ (16384) /* 16k */
 		#else

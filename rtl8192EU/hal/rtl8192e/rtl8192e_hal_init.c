@@ -2839,9 +2839,10 @@ static void hw_var_set_monitor(PADAPTER Adapter, u8 variable, u8 *val)
 		rcr_bits = RCR_AAP | RCR_APM | RCR_AM | RCR_AB | RCR_APWRMGT | RCR_ADF | RCR_ACF | RCR_AMF | RCR_APP_PHYST_RXFF;
 
 
-		#if 0
 		/* Append FCS */
 		rcr_bits |= RCR_APPFCS;
+
+		#if 0
 
 		/* 
 		   CRC and ICV packet will drop in recvbuf2recvframe()
@@ -2873,16 +2874,21 @@ static void hw_var_set_opmode(PADAPTER Adapter, u8 variable, u8* val)
 	u8	val8;
 	u32 val32;
 	u8	mode = *((u8 *)val);
+	static u8 isMonitor = _FALSE;
 	
 	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(Adapter);
 
+	if (isMonitor == _TRUE) {
 	/* reset RCR */
 	rtw_write32(Adapter, REG_RCR, pHalData->ReceiveConfig);
+		isMonitor = _FALSE;
+	}
 
 	DBG_871X( ADPT_FMT "Port-%d  set opmode = %d\n",ADPT_ARG(Adapter),
 		get_iface_type(Adapter), mode);
 
 	if (mode == _HW_STATE_MONITOR_) {
+		isMonitor = _TRUE;
 		/* set net_type */
 		Set_MSR(Adapter, _HW_STATE_NOLINK_);
 
